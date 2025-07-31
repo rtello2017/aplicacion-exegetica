@@ -1,0 +1,56 @@
+.text-viewer-container {
+  padding: 20px;
+  margin: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  /* Ya no necesitamos el scroll horizontal aquí */
+}
+
+.text-viewer-container h3 {
+  margin-top: 0;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 10px;
+}
+
+/* Contenedor principal para la vista interlineal */
+.interlinear-verse {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap; /* <-- LA CLAVE: Permite que las palabras pasen a la siguiente línea */
+  justify-content: flex-start; /* Alinea las palabras al inicio */
+  text-align: center;
+  line-height: 1.5;
+  gap: 5px; /* Añade un pequeño espacio entre cada "pila" de palabras */
+}
+
+/* Cada palabra es una columna */
+.word-stack {
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease-in-out;
+  min-width: 60px; /* Asegura un ancho mínimo para que no se peguen tanto */
+}
+
+.word-stack:hover {
+  background-color: #eaf2ff;
+}
+
+.parsing-code {
+  font-size: 1em; /* <-- CAMBIO: Aumentamos el tamaño de la fuente */
+  color: #005a9e;
+  font-family: monospace;
+}
+
+.greek-word-interlinear {
+  font-size: 1.5em;
+}
+
+.translation {
+  font-size: 0.9em;
+  color: #666;
+  font-style: italic;
+}
