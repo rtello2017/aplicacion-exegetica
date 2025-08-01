@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
+//import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react'; // 1. Importar useMemo
+
 import './App.css';
 import PassageSelector from './components/PassageSelector';
 import TextViewer from './components/TextViewer';
 import AnalysisPopup from './components/AnalysisPopup';
 import PassageNavigator from './components/PassageNavigator'; // <-- 1. IMPORTAR EL NUEVO COMPONENTE
 import SyntaxDiagram from './components/SyntaxDiagram';
+
+import DiagramToolbar from './components/DiagramToolbar';
+import { ShapeNode } from './components/ShapeNode';
+import { ReactFlowProvider } from 'reactflow'; // Importar el Provider
+import { TextNode } from './components/diagram-nodes/TextNode';
 
 function App() {
   // Estados para las listas de los selectores
@@ -19,13 +26,26 @@ function App() {
   const [rangeInput, setRangeInput] = useState('');
   // --- ¡LA CLAVE DE LA SOLUCIÓN! ---
   // Un único estado para guardar la última consulta válida
-  const [activeQuery, setActiveQuery] = useState({ type: 'select', bookId: 1, chapter: 1, verse: 1 });
+  //const [activeQuery, setActiveQuery] = useState({ type: 'select', bookId: 1, chapter: 1, verse: 1 });
+  const [activeQuery, setActiveQuery] = useState(null);
 
   // Estados para el visor de texto y el popup
   const [verseData, setVerseData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  //const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedWord, setSelectedWord] = useState(null);
-  // --- CÓDIGO RESTAURADO PARA CARGAR LOS SELECTORES ---
+  const [nodes, setNodes] = useState([]);
+  const [edges, setEdges] = useState([]);
+  // --- NUEVO ESTADO PARA CONTROLAR LAS PESTAÑAS ---
+  const [activeTab, setActiveTab] = useState('text'); // 'text' o 'diagram'
+
+  const [selectedTool, setSelectedTool] = useState('select');
+  const reactFlowWrapper = useRef(null);
+
+  const nodeTypes = useMemo(() => ({
+    textNode: TextNode,
+    shapeNode: ShapeNode,
+  }), []);
 
   // 1. Cargar la lista de libros al iniciar la app
   useEffect(() => {
@@ -171,6 +191,59 @@ function App() {
     }
   };
 
+  // --- LÓGICA DE CLIC EN LA PALABRA (SIMPLIFICADA) ---
+  // Ahora el clic solo abre el popup, como era originalmente.
+  const handleWordClick = (word) => {
+    setSelectedWord(word);
+  };
+
+  // --- NUEVA FUNCIÓN PARA CARGAR EL PASAJE AL DIAGRAMA ---
+  const loadPassageIntoDiagram = () => {
+    if (!verseData || !verseData.verses) return;
+
+    // Validamos la restricción de 15 versículos
+    if (verseData.verses.length > 15) {
+      alert("La herramienta de diagrama solo puede cargar un máximo de 15 versículos a la vez.");
+      return;
+    }
+
+    const newNodes = [];
+    /*const newNodes = {
+      id: String(word.id),
+      data: { label: word.text },
+      position: { x: index * 120, y: yOffset },
+      type: 'textNode', // <-- AÑADE ESTA LÍNEA
+    };*/
+    let yOffset = 0;
+
+    // Iteramos sobre cada versículo y cada palabra para crear los nodos
+    verseData.verses.forEach(verse => {
+      verse.words.forEach((word, index) => {
+        const newNode = {
+          id: String(word.id),
+          type: 'textNode',
+          data: { label: word.text },
+          position: { x: index * 120, y: yOffset },
+        };
+        newNodes.push(newNode);
+      });
+      yOffset += 100; // Aumentamos el espaciado vertical para el siguiente versículo
+    });
+
+    setNodes(newNodes);
+    setEdges([]); // Limpiamos las conexiones anteriores
+  };
+
+  const handleClearDiagram = () => {
+    // Usamos el diálogo de confirmación nativo del navegador
+    const isConfirmed = window.confirm("¿Estás seguro de que deseas limpiar el lienzo? Se perderá todo el trabajo no guardado.");
+
+    if (isConfirmed) {
+      setNodes([]);
+      setEdges([]);
+    }
+  };
+
   return (
     <div className="app-container"> {/* <-- AÑADE ESTA CLASE */}
       <h1>Proyecto Exegética Bíblica</h1>
@@ -195,18 +268,63 @@ function App() {
         onNextVerse={handleNextVerse}
         onNextBook={handleNextBook}
       />
-      <div className="viewer-container">
-        {loading ? <p>Cargando...</p> : 
-          <TextViewer 
-            verseData={verseData} 
-            onWordClick={setSelectedWord}
-          />
-        }
+
+	    {/* --- NUEVA INTERFAZ DE PESTAÑAS --- */}
+      <div className="tabs-container">
+        <div className="tab-buttons" style={{marginBottom: '10px'}}>
+          <button onClick={() => setActiveTab('text')} className={activeTab === 'text' ? 'active' : ''}>
+            Pasaje
+          </button>
+          <button onClick={() => setActiveTab('diagram')} className={activeTab === 'diagram' ? 'active' : ''}>
+            Diagrama
+          </button>
+        </div>
+
+        <div className="tab-content">
+          {activeTab === 'text' && (
+            <div className="viewer-container">
+              {loading ? <p>Cargando...</p> : 
+                <TextViewer 
+                  verseData={verseData} 
+                  onWordClick={handleWordClick} // <-- Usamos la función simplificada
+                />
+              }
+            </div>
+          )}
+
+          {activeTab === 'diagram' && (
+            <div className="diagram-view-container">
+              <div className="diagram-controls">
+                <button onClick={loadPassageIntoDiagram}>
+                  Añadir Pasaje al Diagrama
+                </button>
+                {/* --- AÑADIR ESTE NUEVO BOTÓN --- */}
+                <button onClick={handleClearDiagram} className="clear-btn">
+                  Limpiar Lienzo
+                </button>
+              </div>
+              <DiagramToolbar
+                onSelectTool={setSelectedTool}
+                selectedTool={selectedTool}
+              />
+              <div className="diagram-wrapper" ref={reactFlowWrapper}>
+                <ReactFlowProvider> {/* Envolver con el Provider */}
+                  <SyntaxDiagram
+                    nodes={nodes}
+                    setNodes={setNodes}
+                    edges={edges}
+                    setEdges={setEdges}
+                    nodeTypes={nodeTypes}
+                    selectedTool={selectedTool}
+                    reactFlowWrapper={reactFlowWrapper}
+                  />
+                </ReactFlowProvider>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-      {/* --- AÑADIMOS EL NUEVO COMPONENTE AQUÍ --- */}
-      <div className="diagram-container" style={{ marginTop: '30px' }}>
-          <SyntaxDiagram />
-      </div>
+	  
       {selectedWord && 
         <AnalysisPopup 
           wordData={selectedWord} 

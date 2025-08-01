@@ -13,3 +13,74 @@
   margin-bottom: 30px;
   font-size: 2.5em; /* Aumentamos el tamaño del título principal */
 }
+
+/* --- Estilos para las Pestañas --- */
+.tabs-container {
+  margin-top: 30px;
+}
+
+.tab-buttons {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab-buttons button {
+  padding: 10px 20px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 1em;
+  position: relative;
+  top: 1px; /* Pequeño truco para que el borde inferior se alinee */
+}
+
+.tab-buttons button.active {
+  background-color: var(--color-white);
+  border-color: var(--color-border);
+  border-radius: 5px 5px 0 0;
+  font-weight: bold;
+}
+
+.tab-content {
+  padding: 20px;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 5px 5px;
+}
+
+.diagram-controls {
+  margin-bottom: 15px;
+}
+
+.diagram-controls button {
+  padding: 8px 15px;
+  border: none;
+  background-color: var(--color-accent);
+  color: var(--color-white);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.diagram-controls .clear-btn {
+  background-color: #6c757d; /* Un color gris para acciones secundarias */
+}
+
+.diagram-controls .clear-btn:hover {
+    opacity: 0.9;
+}
+
+.diagram-view-container {
+  display: flex;
+  flex-direction: row;
+  height: 600px; /* O la altura que prefieras */
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.diagram-wrapper {
+  flex-grow: 1; /* Hace que el lienzo ocupe el resto del espacio */
+  height: 100%;
+}
