@@ -69,3 +69,35 @@ hr {
     padding: 10px;
     border-radius: 4px;
 }
+
+/* Añade esto al final de AnalysisPopup.css */
+.popup-edit-btn, .popup-save-btn {
+  position: absolute;
+  top: 10px;
+  left: 15px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.popup-save-btn {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.editable-field, .editable-field-textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1em;
+  box-sizing: border-box; /* Importante para que el padding no desborde */
+}
+
+.editable-field-textarea {
+  min-height: 100px;
+  resize: vertical;
+}

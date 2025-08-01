@@ -54,6 +54,17 @@ const createTables = async () => {
     `);
     console.log('Tabla "strongs_lexicon" lista.');
 
+    // Dentro de la función createTables, después de la creación de 'strongs_lexicon'
+    console.log('5. Verificando tabla "user_translations"...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_translations (
+        translation_id SERIAL PRIMARY KEY,
+        word_id INTEGER UNIQUE NOT NULL REFERENCES words(word_id),
+        user_translation TEXT
+      );
+    `);
+    console.log('Tabla "user_translations" lista.');
+
     console.log('\n--- Migración de la base de datos completada exitosamente ---');
 
   } catch (err) {

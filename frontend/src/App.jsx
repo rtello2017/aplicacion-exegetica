@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import PassageSelector from './components/PassageSelector';
 import TextViewer from './components/TextViewer';
@@ -9,16 +9,18 @@ function App() {
   const [books, setBooks] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [verses, setVerses] = useState([]);
-  const [selectedWord, setSelectedWord] = useState(null); 
 
   // Estados para la selección actual del usuario
-  const [selectedBookId, setSelectedBookId] = useState(4); // Empezamos con Juan (book_id=4)
+  const [selectedBookId, setSelectedBookId] = useState(4); // Juan (book_id=4)
   const [selectedChapter, setSelectedChapter] = useState(1);
   const [selectedVerse, setSelectedVerse] = useState(1);
-  
-  // Estados para el visor de texto
+
+  // Estados para el visor de texto y el popup
   const [verseData, setVerseData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedWord, setSelectedWord] = useState(null);
+
+  // --- CÓDIGO RESTAURADO PARA CARGAR LOS SELECTORES ---
 
   // 1. Cargar la lista de libros al iniciar la app
   useEffect(() => {
@@ -35,13 +37,11 @@ function App() {
       .then(res => res.json())
       .then(data => {
         const chapterCount = data.chapter_count || 0;
-        // Creamos un array de números [1, 2, 3, ..., N]
         setChapters(Array.from({ length: chapterCount }, (_, i) => i + 1));
-        // Al cambiar de libro, reseteamos al capítulo 1
         setSelectedChapter(1); 
       })
       .catch(err => console.error("Error al cargar capítulos:", err));
-  }, [selectedBookId]); // Se ejecuta cada vez que cambia el libro
+  }, [selectedBookId]);
 
   // 3. Cargar la lista de versículos cuando cambia el capítulo (o el libro)
   useEffect(() => {
@@ -51,22 +51,24 @@ function App() {
       .then(data => {
         const verseCount = data.verse_count || 0;
         setVerses(Array.from({ length: verseCount }, (_, i) => i + 1));
-         // Al cambiar de capítulo, reseteamos al versículo 1
         setSelectedVerse(1);
       })
       .catch(err => console.error("Error al cargar versículos:", err));
-  }, [selectedBookId, selectedChapter]); // Se ejecuta si cambia el libro o el capítulo
+  }, [selectedBookId, selectedChapter]);
 
-  // 4. Cargar el texto del versículo cuando cambia la selección completa
-  useEffect(() => {
-    if (!selectedBookId || !selectedChapter || !selectedVerse) return;
-    
-    // Obtenemos el nombre del libro para la API
+  // --- FIN DEL CÓDIGO RESTAURADO ---
+
+
+  // Función reutilizable para cargar el texto del versículo
+  const fetchVerseData = () => {
+    if (!selectedBookId || !selectedChapter || !selectedVerse || books.length === 0) return;
     const bookName = books.find(b => b.book_id === selectedBookId)?.name;
     if (!bookName) return;
 
     setLoading(true);
-    fetch(`http://localhost:4000/api/verse/${bookName}/${selectedChapter}/${selectedVerse}`)
+    const apiUrl = `http://localhost:4000/api/verse/${bookName}/${selectedChapter}/${selectedVerse}`;
+
+    fetch(apiUrl)
       .then(res => res.ok ? res.json() : Promise.reject('Verse not found'))
       .then(data => setVerseData(data))
       .catch(error => {
@@ -74,7 +76,12 @@ function App() {
         setVerseData(null);
       })
       .finally(() => setLoading(false));
-  }, [selectedBookId, selectedChapter, selectedVerse, books]); // El más completo
+  };
+
+  // useEffect que llama a la función de fetch cuando cambia la selección
+  useEffect(() => {
+    fetchVerseData();
+  }, [selectedBookId, selectedChapter, selectedVerse, books]);
 
   return (
     <div>
@@ -90,16 +97,22 @@ function App() {
         selectedVerse={selectedVerse}
         setSelectedVerse={setSelectedVerse}
       />
-      {loading ? <p>Cargando...</p> : <TextViewer verseData={verseData} onWordClick={setSelectedWord} />}
-      {/* Renderizamos el nuevo popup si hay una palabra seleccionada */}
+      <div className="viewer-container">
+        {loading ? <p>Cargando...</p> : 
+          <TextViewer 
+            verseData={verseData} 
+            onWordClick={setSelectedWord}
+          />
+        }
+      </div>
       {selectedWord && 
         <AnalysisPopup 
           wordData={selectedWord} 
-          onClose={() => setSelectedWord(null)} // <-- FUNCIÓN PARA CERRAR
+          onClose={() => setSelectedWord(null)}
+          onSave={fetchVerseData}
         />
       }
     </div>
   );
 }
-
 export default App;

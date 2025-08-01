@@ -33,16 +33,18 @@ app.get('/api/verse/:bookName/:chapter/:verse', async (req, res) => {
   const { bookName, chapter, verse } = req.params;
   try {
     // La consulta ahora une las 3 tablas para obtener toda la información
-    const query = `
-      SELECT 
-        w.word_id, w.text, w.lemma, w.pos, w.parsing, w.strongs,
-        sl.transliteration, sl.gloss, sl.definition
-      FROM words w
-      JOIN books b ON w.book_id = b.book_id
-      LEFT JOIN strongs_lexicon sl ON w.strongs = sl.strongs_id
-      WHERE b.name = $1 AND w.chapter = $2 AND w.verse = $3
-      ORDER BY w.position_in_verse;
-    `;
+  const query = `
+    SELECT 
+      w.word_id, w.text, w.lemma, w.pos, w.parsing, w.strongs,
+      sl.transliteration, sl.gloss, sl.definition,
+      ut.user_translation
+    FROM words w
+    JOIN books b ON w.book_id = b.book_id
+    LEFT JOIN strongs_lexicon sl ON w.strongs = sl.strongs_id
+    LEFT JOIN user_translations ut ON w.word_id = ut.word_id
+    WHERE b.name = $1 AND w.chapter = $2 AND w.verse = $3
+    ORDER BY w.position_in_verse;
+  `;
 
     const result = await pool.query(query, [bookName, chapter, verse]);
 
@@ -62,7 +64,8 @@ app.get('/api/verse/:bookName/:chapter/:verse', async (req, res) => {
         strongs: row.strongs,
         transliteration: row.transliteration,
         gloss: row.gloss, // La traducción corta
-        definition: row.definition // La definición larga
+        definition: row.definition, // La definición larga
+        user_translation: row.user_translation // <-- AÑADIR ESTE CAMPO
       }))
     };
 
@@ -108,6 +111,54 @@ app.get('/api/verses/:bookId/:chapter', async (req, res) => {
     console.error('Error al obtener los versículos', err);
     res.status(500).json({ message: 'Error en el servidor.' });
   }
+});
+
+// 1. Actualizar la información del léxico (definiciones, etc.)
+app.patch('/api/lexicon/:strongsId', async (req, res) => {
+  const { strongsId } = req.params;
+  const { transliteration, gloss, definition } = req.body;
+  try {
+    await pool.query(
+      'UPDATE strongs_lexicon SET transliteration = $1, gloss = $2, definition = $3 WHERE strongs_id = $4',
+      [transliteration, gloss, definition, strongsId]
+    );
+    res.json({ message: 'Léxico actualizado exitosamente.' });
+  } catch (err) {
+    console.error('Error al actualizar el léxico:', err);
+    res.status(500).json({ message: 'Error en el servidor.' });
+  }
+});
+
+// 2. Actualizar el N° de Strong de una palabra específica
+app.patch('/api/word/:wordId', async (req, res) => {
+    const { wordId } = req.params;
+    const { strongs } = req.body;
+    try {
+        await pool.query('UPDATE words SET strongs = $1 WHERE word_id = $2', [strongs, wordId]);
+        res.json({ message: 'Nº de Strong actualizado.' });
+    } catch (err) {
+        console.error('Error al actualizar el Nº de Strong:', err);
+        res.status(500).json({ message: 'Error en el servidor.' });
+    }
+});
+
+// 3. Crear o actualizar la traducción del usuario para una palabra
+app.patch('/api/translation/:wordId', async (req, res) => {
+    const { wordId } = req.params;
+    const { user_translation } = req.body;
+    try {
+        const query = `
+            INSERT INTO user_translations (word_id, user_translation)
+            VALUES ($1, $2)
+            ON CONFLICT (word_id) 
+            DO UPDATE SET user_translation = $2;
+        `;
+        await pool.query(query, [wordId, user_translation]);
+        res.json({ message: 'Traducción guardada.' });
+    } catch (err) {
+        console.error('Error al guardar la traducción:', err);
+        res.status(500).json({ message: 'Error en el servidor.' });
+    }
 });
 
 

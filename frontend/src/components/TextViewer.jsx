@@ -22,11 +22,13 @@ function TextViewer({ verseData, onWordClick }) {
           const shortCode = generateShortCode(word.pos, word.parsing);
           // La traducción ahora viene directamente de la API (word.gloss)
           //const translation = word.gloss || '---';
+          const translation = word.user_translation || ''; 
 
           return (
             <div key={word.id} className="word-stack" onClick={() => onWordClick(word)}>
               <div className="parsing-code">{shortCode}</div>
               <div className="greek-word-interlinear">{word.text}</div>
+              <div className="translation">{translation}</div>
               {/* <div className="translation">{translation}</div> */} {/* <-- LÍNEA ELIMINADA */}
             </div>
           );
