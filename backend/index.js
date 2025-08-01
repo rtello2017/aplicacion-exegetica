@@ -161,6 +161,133 @@ app.patch('/api/translation/:wordId', async (req, res) => {
     }
 });
 
+// --- NUEVA RUTA PARA OBTENER UN CAPÍTULO COMPLETO ---
+app.get('/api/chapter/:bookName/:chapter', async (req, res) => {
+  const { bookName, chapter } = req.params;
+  try {
+    const query = `
+      SELECT 
+        w.word_id, w.verse, w.text, w.lemma, w.pos, w.parsing, w.strongs,
+        sl.transliteration, sl.gloss, sl.definition,
+        ut.user_translation
+      FROM words w
+      JOIN books b ON w.book_id = b.book_id
+      LEFT JOIN strongs_lexicon sl ON w.strongs = sl.strongs_id
+      LEFT JOIN user_translations ut ON w.word_id = ut.word_id
+      WHERE b.name = $1 AND w.chapter = $2
+      ORDER BY w.verse, w.position_in_verse;
+    `;
+    const result = await pool.query(query, [bookName, chapter]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Capítulo no encontrado.' });
+    }
+
+    // Agrupamos las palabras por versículo
+    const verses = result.rows.reduce((acc, row) => {
+      // Si el versículo no existe en el acumulador, lo creamos
+      if (!acc[row.verse]) {
+        acc[row.verse] = {
+          verse: row.verse,
+          words: []
+        };
+      }
+      // Añadimos la palabra al versículo correspondiente
+      acc[row.verse].words.push({
+        id: row.word_id,
+        text: row.text,
+        lemma: row.lemma,
+        pos: row.pos,
+        parsing: row.parsing,
+        strongs: row.strongs,
+        transliteration: row.transliteration,
+        gloss: row.gloss,
+        definition: row.definition,
+        user_translation: row.user_translation
+      });
+      return acc;
+    }, {});
+
+    const responseData = {
+      reference: `${bookName} ${chapter}`,
+      // Convertimos el objeto de versículos en un array ordenado
+      verses: Object.values(verses).sort((a, b) => a.verse - b.verse)
+    };
+
+    res.json(responseData);
+  } catch (err) {
+    console.error(`Error al obtener el capítulo ${bookName} ${chapter}`, err);
+    res.status(500).json({ message: 'Error en el servidor.' });
+  }
+});
+
+// --- NUEVA RUTA PARA OBTENER RANGOS DE PASAJES ---
+app.get('/api/passage/:range', async (req, res) => {
+  const { range } = req.params;
+  // Expresión regular para entender formatos como "John 3:16" o "John 3:16-18"
+  const singleVerseRegex = /(.+?)\s+(\d+):(\d+)$/;
+  const verseRangeRegex = /(.+?)\s+(\d+):(\d+)-(\d+)$/;
+
+  let bookName, chapter, startVerse, endVerse;
+  let match = range.match(verseRangeRegex);
+
+  if (match) {
+    // Coincide con un rango (ej. John 3:16-18)
+    bookName = match[1].trim();
+    chapter = parseInt(match[2]);
+    startVerse = parseInt(match[3]);
+    endVerse = parseInt(match[4]);
+  } else {
+    match = range.match(singleVerseRegex);
+    if (match) {
+      // Coincide con un solo versículo (ej. John 3:16)
+      bookName = match[1].trim();
+      chapter = parseInt(match[2]);
+      startVerse = parseInt(match[3]);
+      endVerse = startVerse;
+    } else {
+      return res.status(400).json({ message: 'Formato de pasaje no reconocido. Use "Libro C:V" o "Libro C:V-V".' });
+    }
+  }
+
+  // Buscamos el nombre del libro en inglés en nuestra base de datos para manejar variaciones
+  const bookResult = await pool.query('SELECT name FROM books WHERE name ILIKE $1', [bookName]);
+  if (bookResult.rows.length === 0) {
+      return res.status(404).json({ message: `Libro "${bookName}" no encontrado.` });
+  }
+  const correctBookName = bookResult.rows[0].name;
+
+  try {
+    const query = `
+      SELECT w.word_id, w.verse, w.text, w.lemma, w.pos, w.parsing, w.strongs, sl.gloss, ut.user_translation
+      FROM words w
+      JOIN books b ON w.book_id = b.book_id
+      LEFT JOIN strongs_lexicon sl ON w.strongs = sl.strongs_id
+      LEFT JOIN user_translations ut ON w.word_id = ut.word_id
+      WHERE b.name = $1 AND w.chapter = $2 AND w.verse BETWEEN $3 AND $4
+      ORDER BY w.verse, w.position_in_verse;
+    `;
+    const result = await pool.query(query, [correctBookName, chapter, startVerse, endVerse]);
+
+    // ... (El código para agrupar por versículos es idéntico al del endpoint /api/chapter/... )
+    const verses = result.rows.reduce((acc, row) => {
+      if (!acc[row.verse]) { acc[row.verse] = { verse: row.verse, words: [] }; }
+      acc[row.verse].words.push({ id: row.word_id, text: row.text, lemma: row.lemma, pos: row.pos, parsing: row.parsing, strongs: row.strongs, gloss: row.gloss, user_translation: row.user_translation });
+      return acc;
+    }, {});
+
+    const responseData = {
+      reference: range,
+      verses: Object.values(verses).sort((a, b) => a.verse - b.verse)
+    };
+    res.json(responseData);
+
+  } catch (err) {
+    console.error(`Error al obtener el pasaje ${range}`, err);
+    res.status(500).json({ message: 'Error en el servidor.' });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);

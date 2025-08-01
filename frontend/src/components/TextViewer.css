@@ -54,3 +54,16 @@
   color: #666;
   font-style: italic;
 }
+
+.verse-block {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.verse-number {
+  font-weight: bold;
+  margin-right: 10px;
+  font-size: 1.2em;
+  color: #888;
+}

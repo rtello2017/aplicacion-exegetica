@@ -5,7 +5,9 @@ function PassageSelector({
   books, chapters, verses,
   selectedBookId, setSelectedBookId,
   selectedChapter, setSelectedChapter,
-  selectedVerse, setSelectedVerse
+  selectedVerse, setSelectedVerse,
+  rangeInput, setRangeInput,
+  handleRangeLoad
 }) {
   return (
     <div className="passage-selector-container">
@@ -37,7 +39,9 @@ function PassageSelector({
 
         <div className="selector-group">
           <label htmlFor="verse">Versículo</label>
-          <select id="verse" value={selectedVerse} onChange={(e) => setSelectedVerse(parseInt(e.target.value))}>
+          <select id="verse" value={selectedVerse} onChange={(e) => setSelectedVerse(e.target.value)}>
+            <option key="all" value="ALL">TODOS</option>
+
             {verses.map(verse => (
               <option key={verse} value={verse}>
                 {verse}
@@ -45,6 +49,18 @@ function PassageSelector({
             ))}
           </select>
         </div>
+      </div>
+      {/* Nuevo formulario para rangos */}
+      <div className="range-selector">
+        <input 
+          type="text" 
+          className="range-input"
+          placeholder="Ej: John 3:16-18"
+          value={rangeInput}
+          onChange={(e) => setRangeInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleRangeLoad()}
+        />
+        <button onClick={handleRangeLoad}>Cargar Pasaje</button>
       </div>
     </div>
   );

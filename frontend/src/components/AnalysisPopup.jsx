@@ -59,9 +59,19 @@ function AnalysisPopup({ wordData, onClose, onSave }) {
           <div className="analysis-item">
             <strong>Nº Strong:</strong>
             {isEditing ? (
+              // Si estamos editando, muestra solo el input
               <input type="text" value={strongs} onChange={(e) => setStrongs(e.target.value)} className="editable-field" />
             ) : (
-              <span>{wordData.strongs ? `G${wordData.strongs}` : 'N/A'}</span>
+              // Si estamos en modo lectura, comprueba si hay un número de Strong
+              wordData.strongs ? (
+                // Si existe, muestra solo el enlace
+                <a href={`https://biblehub.com/greek/${wordData.strongs}.htm`} target="_blank" rel="noopener noreferrer">
+                  G{wordData.strongs}
+                </a>
+              ) : (
+                // Si no existe, muestra N/A
+                <span>N/A</span>
+              )
             )}
           </div>
         </div>
