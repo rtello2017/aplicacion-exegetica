@@ -1,0 +1,23 @@
+.passage-navigator {
+  display: flex;
+  /* Esta es la regla clave que centra los botones horizontalmente */
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.passage-navigator button {
+  font-size: 1.5em;
+  font-weight: bold;
+  padding: 5px 15px;
+  border: 1px solid #ccc;
+  background-color: #f7f7f7;
+  border-radius: 4px;
+  cursor: pointer;
+  min-width: 50px;
+}
+
+.passage-navigator button:hover {
+  background-color: #e9e9e9;
+}

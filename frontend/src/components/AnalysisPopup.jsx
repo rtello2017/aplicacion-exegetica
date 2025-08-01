@@ -30,7 +30,8 @@ function AnalysisPopup({ wordData, onClose, onSave }) {
     onClose(); // Cierra el popup
   };
 
-  return (
+  // Dentro de AnalysisPopup.jsx, reemplaza solo el return
+return (
     <div className="popup-overlay" onClick={onClose}>
       <div className="popup-content" onClick={(e) => e.stopPropagation()}>
         <button className="popup-close-btn" onClick={onClose}>×</button>
@@ -40,52 +41,46 @@ function AnalysisPopup({ wordData, onClose, onSave }) {
           </button>
         )}
         <h2>{isEditing ? 'Editar Anotaciones' : 'Análisis de la Palabra'}</h2>
-        
-        <div className="analysis-item">
+
+        <div className="analysis-section">
           <strong>Traducción Personal:</strong>
           {isEditing ? (
             <input type="text" value={translation} onChange={(e) => setTranslation(e.target.value)} className="editable-field" />
           ) : (
-            <span>{wordData.user_translation || 'N/A'}</span>
+            <p>{translation || 'N/A'}</p>
           )}
         </div>
-        
+
         <hr />
 
         <div className="analysis-grid">
-          <div className="analysis-item"><strong>Texto:</strong> <span className="greek-text">{wordData.text}</span></div>
-          <div className="analysis-item"><strong>Análisis:</strong> <span>{detailedAnalysis}</span></div>
-          <div className="analysis-item"><strong>Lema:</strong> <span>{wordData.lemma}</span></div>
-          <div className="analysis-item">
-            <strong>Nº Strong:</strong>
-            {isEditing ? (
-              // Si estamos editando, muestra solo el input
-              <input type="text" value={strongs} onChange={(e) => setStrongs(e.target.value)} className="editable-field" />
-            ) : (
-              // Si estamos en modo lectura, comprueba si hay un número de Strong
-              wordData.strongs ? (
-                // Si existe, muestra solo el enlace
-                <a href={`https://biblehub.com/greek/${wordData.strongs}.htm`} target="_blank" rel="noopener noreferrer">
-                  G{wordData.strongs}
-                </a>
-              ) : (
-                // Si no existe, muestra N/A
-                <span>N/A</span>
-              )
-            )}
-          </div>
-        </div>
-        
-        {/* Estos campos ahora son siempre de solo lectura, derivados del Nº de Strong */}
-        <div className="analysis-item">
+          <strong>Texto:</strong>
+          <span className="greek-text">{wordData.text}</span>
+
+          <strong>Lema:</strong>
+          <span>{wordData.lemma}</span>
+
+          <strong>Nº Strong:</strong>
+          {isEditing ? (
+            <input type="text" value={strongs} onChange={(e) => setStrongs(e.target.value)} className="editable-field" />
+          ) : ( wordData.strongs ? ( <a href={`https://biblehub.com/greek/${wordData.strongs}.htm`} target="_blank" rel="noopener noreferrer">G{wordData.strongs}</a> ) : ( <span>N/A</span> )
+          )}
+
           <strong>Transliteración:</strong>
           <span>{wordData.transliteration || 'N/A'}</span>
         </div>
-        <div className="analysis-item">
-          <strong>Definición Breve (Glosa):</strong>
-          <span>{wordData.gloss || 'N/A'}</span>
+
+        <div className="analysis-section">
+          <strong>Análisis Morfológico:</strong>
+          <p>{detailedAnalysis}</p>
         </div>
-        <div className="analysis-item">
+
+        <div className="analysis-section">
+          <strong>Definición (Glosa):</strong>
+          <p>{wordData.gloss || 'N/A'}</p>
+        </div>
+
+        <div className="analysis-section">
           <strong>Definición Completa:</strong>
           <p className="definition-text">{wordData.definition || 'N/A'}</p>
         </div>

@@ -1,15 +1,12 @@
 .text-viewer-container {
   padding: 20px;
-  margin: 20px;
-  border: 1px solid #e0e0e0;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background-color: #ffffff;
-  /* Ya no necesitamos el scroll horizontal aquí */
 }
-
 .text-viewer-container h3 {
   margin-top: 0;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 10px;
 }
 
@@ -17,11 +14,11 @@
 .interlinear-verse {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap; /* <-- LA CLAVE: Permite que las palabras pasen a la siguiente línea */
-  justify-content: flex-start; /* Alinea las palabras al inicio */
+  flex-wrap: wrap; 
+  justify-content: flex-start;
   text-align: center;
   line-height: 1.5;
-  gap: 5px; /* Añade un pequeño espacio entre cada "pila" de palabras */
+  gap: 15px; /* <-- Aumentamos el espacio horizontal entre palabras */
 }
 
 /* Cada palabra es una columna */
@@ -40,13 +37,15 @@
 }
 
 .parsing-code {
-  font-size: 1em; /* <-- CAMBIO: Aumentamos el tamaño de la fuente */
-  color: #005a9e;
+  font-size: 1em;
+  color: var(--color-accent); /* Usamos el color de acento */
   font-family: monospace;
+  font-weight: bold;
 }
 
 .greek-word-interlinear {
-  font-size: 1.5em;
+  font-size: 1.6em; /* Aumentamos un poco el tamaño para mayor legibilidad */
+  font-family: 'Cardo', serif; /* <-- AÑADIR ESTA LÍNEA */
 }
 
 .translation {

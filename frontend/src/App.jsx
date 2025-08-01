@@ -3,6 +3,8 @@ import './App.css';
 import PassageSelector from './components/PassageSelector';
 import TextViewer from './components/TextViewer';
 import AnalysisPopup from './components/AnalysisPopup';
+import PassageNavigator from './components/PassageNavigator'; // <-- 1. IMPORTAR EL NUEVO COMPONENTE
+import SyntaxDiagram from './components/SyntaxDiagram';
 
 function App() {
   // Estados para las listas de los selectores
@@ -113,8 +115,64 @@ function App() {
     setActiveQuery({ type: 'range', range: rangeInput });
   };
 
+  const handleNextVerse = () => {
+    const currentVerseNum = parseInt(selectedVerse);
+    if (currentVerseNum < verses.length) {
+      setSelectedVerse(currentVerseNum + 1);
+    } else {
+      handleNextChapter();
+    }
+  };
+
+  const handlePrevVerse = () => {
+    const currentVerseNum = parseInt(selectedVerse);
+    if (currentVerseNum > 1) {
+      setSelectedVerse(currentVerseNum - 1);
+    } else {
+      handlePrevChapter();
+    }
+  };
+
+  const handleNextChapter = () => {
+    const currentChapterNum = parseInt(selectedChapter);
+    if (currentChapterNum < chapters.length) {
+      setSelectedChapter(currentChapterNum + 1);
+    } else {
+      handleNextBook();
+    }
+  };
+
+  const handlePrevChapter = async () => {
+    const currentChapterNum = parseInt(selectedChapter);
+    if (currentChapterNum > 1) {
+      // Para ir al último versículo del capítulo anterior, necesitamos saber cuántos versículos tiene
+      const prevChapter = currentChapterNum - 1;
+      const res = await fetch(`http://localhost:4000/api/verses/${selectedBookId}/${prevChapter}`);
+      const data = await res.json();
+      const lastVerse = data.verse_count;
+      setSelectedChapter(prevChapter);
+      setSelectedVerse(lastVerse);
+    } else {
+      handlePrevBook();
+    }
+  };
+
+  const handleNextBook = () => {
+    const currentIndex = books.findIndex(b => b.book_id === selectedBookId);
+    if (currentIndex < books.length - 1) {
+      setSelectedBookId(books[currentIndex + 1].book_id);
+    }
+  };
+
+  const handlePrevBook = () => {
+    const currentIndex = books.findIndex(b => b.book_id === selectedBookId);
+    if (currentIndex > 0) {
+      setSelectedBookId(books[currentIndex - 1].book_id);
+    }
+  };
+
   return (
-    <div>
+    <div className="app-container"> {/* <-- AÑADE ESTA CLASE */}
       <h1>Proyecto Exegética Bíblica</h1>
       <PassageSelector
         books={books}
@@ -130,6 +188,13 @@ function App() {
         setRangeInput={setRangeInput}
         handleRangeLoad={handleRangeLoad} // <-- PASAMOS LA NUEVA FUNCIÓN
       />
+      {/* 2. AÑADIR EL COMPONENTE DE NAVEGACIÓN */}
+      <PassageNavigator 
+        onPrevBook={handlePrevBook}
+        onPrevVerse={handlePrevVerse}
+        onNextVerse={handleNextVerse}
+        onNextBook={handleNextBook}
+      />
       <div className="viewer-container">
         {loading ? <p>Cargando...</p> : 
           <TextViewer 
@@ -137,6 +202,10 @@ function App() {
             onWordClick={setSelectedWord}
           />
         }
+      </div>
+      {/* --- AÑADIMOS EL NUEVO COMPONENTE AQUÍ --- */}
+      <div className="diagram-container" style={{ marginTop: '30px' }}>
+          <SyntaxDiagram />
       </div>
       {selectedWord && 
         <AnalysisPopup 

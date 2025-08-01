@@ -1,0 +1,15 @@
+.app-container {
+  max-width: 1500px; /* Establece un ancho máximo para que no se estire demasiado en pantallas gigantes */
+  margin: 0 auto;    /* Este es el truco: 0 de margen arriba/abajo, y 'auto' a los lados para centrarlo */
+  padding: 20px;     /* Añade un poco de espacio interior para que no se pegue a los bordes del navegador */
+}
+
+.app-container h1 {
+  color: var(--color-primary);
+  text-align: center;
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 20px;
+  margin-top: 0;
+  margin-bottom: 30px;
+  font-size: 2.5em; /* Aumentamos el tamaño del título principal */
+}

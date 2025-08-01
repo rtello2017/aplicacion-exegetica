@@ -1,0 +1,20 @@
+/* --- 1. Importación de Fuentes de Google --- */
+@import url('https://fonts.googleapis.com/css2?family=Cardo:wght@400;700&family=Lato:wght@400;700&display=swap');
+
+/* --- 2. Definición de la Paleta de Colores --- */
+:root {
+  --color-background: #f8f9fa; /* Gris muy claro para el fondo */
+  --color-text: #212529;       /* Gris oscuro para el texto */
+  --color-primary: #343a40;    /* Gris/azul oscuro para títulos principales */
+  --color-accent: #007bff;      /* Azul brillante para acentos y acciones */
+  --color-white: #ffffff;      /* Blanco puro para los contenedores */
+  --color-border: #dee2e6;     /* Gris claro para bordes y separadores */
+}
+
+/* --- 3. Estilos Globales Base --- */
+body {
+  margin: 0;
+  font-family: 'Lato', sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
