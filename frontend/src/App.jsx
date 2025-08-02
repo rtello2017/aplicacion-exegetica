@@ -1,18 +1,17 @@
-//import React, { useState, useEffect } from 'react';
 import React, { useState, useEffect, useMemo, useRef } from 'react'; // 1. Importar useMemo
-
 import './App.css';
+import { ReactFlowProvider } from 'reactflow'; // Importar el Provider
+
+// Importación de componentes
 import PassageSelector from './components/PassageSelector';
 import TextViewer from './components/TextViewer';
 import AnalysisPopup from './components/AnalysisPopup';
 import PassageNavigator from './components/PassageNavigator'; // <-- 1. IMPORTAR EL NUEVO COMPONENTE
 import SyntaxDiagram from './components/SyntaxDiagram';
-
 import DiagramToolbar from './components/DiagramToolbar';
 import { ShapeNode } from './components/ShapeNode';
-import { ReactFlowProvider } from 'reactflow'; // Importar el Provider
 import { TextNode } from './components/diagram-nodes/TextNode';
-
+																																		   
 function App() {
   // Estados para las listas de los selectores
   const [books, setBooks] = useState([]);
@@ -24,21 +23,17 @@ function App() {
   const [selectedChapter, setSelectedChapter] = useState(1);
   const [selectedVerse, setSelectedVerse] = useState(1);
   const [rangeInput, setRangeInput] = useState('');
-  // --- ¡LA CLAVE DE LA SOLUCIÓN! ---
-  // Un único estado para guardar la última consulta válida
-  //const [activeQuery, setActiveQuery] = useState({ type: 'select', bookId: 1, chapter: 1, verse: 1 });
   const [activeQuery, setActiveQuery] = useState(null);
 
   // Estados para el visor de texto y el popup
   const [verseData, setVerseData] = useState(null);
-  //const [loading, setLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [selectedWord, setSelectedWord] = useState(null);
+  const [activeTab, setActiveTab] = useState('text'); // 'text' o 'diagram'
+  
+  // Estados de React Flow
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
-  // --- NUEVO ESTADO PARA CONTROLAR LAS PESTAÑAS ---
-  const [activeTab, setActiveTab] = useState('text'); // 'text' o 'diagram'
-
   const [selectedTool, setSelectedTool] = useState('select');
   const reactFlowWrapper = useRef(null);
 
@@ -61,9 +56,8 @@ function App() {
     fetch(`http://localhost:4000/api/chapters/${selectedBookId}`)
       .then(res => res.json())
       .then(data => {
-        const chapterCount = data.chapter_count || 0;
-        setChapters(Array.from({ length: chapterCount }, (_, i) => i + 1));
-        setSelectedChapter(1); 
+        setChapters(Array.from({ length: data.chapter_count || 0 }, (_, i) => i + 1));
+        setSelectedChapter(1);
       })
       .catch(err => console.error("Error al cargar capítulos:", err));
   }, [selectedBookId]);
@@ -206,14 +200,11 @@ function App() {
       alert("La herramienta de diagrama solo puede cargar un máximo de 15 versículos a la vez.");
       return;
     }
+	
+	// Filtramos para mantener solo los nodos que son formas (los que no son 'textNode')
+    const existingShapeNodes = nodes.filter(node => node.type !== 'textNode');
 
     const newNodes = [];
-    /*const newNodes = {
-      id: String(word.id),
-      data: { label: word.text },
-      position: { x: index * 120, y: yOffset },
-      type: 'textNode', // <-- AÑADE ESTA LÍNEA
-    };*/
     let yOffset = 0;
 
     // Iteramos sobre cada versículo y cada palabra para crear los nodos
@@ -230,7 +221,7 @@ function App() {
       yOffset += 100; // Aumentamos el espaciado vertical para el siguiente versículo
     });
 
-    setNodes(newNodes);
+    setNodes([...existingShapeNodes, ...newNodes]);
     setEdges([]); // Limpiamos las conexiones anteriores
   };
 
@@ -243,6 +234,10 @@ function App() {
       setEdges([]);
     }
   };
+
+				   
+							 
+		 
 
   return (
     <div className="app-container"> {/* <-- AÑADE ESTA CLASE */}
@@ -286,15 +281,15 @@ function App() {
               {loading ? <p>Cargando...</p> : 
                 <TextViewer 
                   verseData={verseData} 
-                  onWordClick={handleWordClick} // <-- Usamos la función simplificada
+                  onWordClick={setSelectedWord} // <-- Usamos la función simplificada
                 />
               }
             </div>
           )}
 
           {activeTab === 'diagram' && (
-            <div className="diagram-view-container">
-              <div className="diagram-controls">
+            <div className="diagram-main-container">
+			  <div className="diagram-top-controls">
                 <button onClick={loadPassageIntoDiagram}>
                   Añadir Pasaje al Diagrama
                 </button>
@@ -303,6 +298,8 @@ function App() {
                   Limpiar Lienzo
                 </button>
               </div>
+			  {/* Este contenedor usa flexbox para alinear la barra y el lienzo */}
+              <div className="diagram-view-container">
               <DiagramToolbar
                 onSelectTool={setSelectedTool}
                 selectedTool={selectedTool}
@@ -317,8 +314,9 @@ function App() {
                     nodeTypes={nodeTypes}
                     selectedTool={selectedTool}
                     reactFlowWrapper={reactFlowWrapper}
-                  />
-                </ReactFlowProvider>
+                    />
+                  </ReactFlowProvider>
+                </div>
               </div>
             </div>
           )}

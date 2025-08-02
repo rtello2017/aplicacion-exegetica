@@ -1,9 +1,13 @@
 .diagram-toolbar {
   display: flex;
   flex-direction: column;
-  background-color: #f0f0f0;
+  background-color: #f8f9fa;
   padding: 8px;
   border-right: 1px solid #ddd;
+
+  /* --- CORRECCIÓN CLAVE --- */
+  flex-shrink: 0; /* Evita que la barra se encoja si la ventana es muy pequeña */
+  width: 60px;    /* Le damos un ancho fijo a la barra de herramientas */
 }
 
 .toolbar-button {
@@ -14,6 +18,12 @@
   padding: 8px;
   cursor: pointer;
   transition: background-color 0.2s;
+
+  /* --- CORRECCIÓN CLAVE --- */
+  /* Centramos el ícono SVG dentro del botón */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .toolbar-button:hover {
