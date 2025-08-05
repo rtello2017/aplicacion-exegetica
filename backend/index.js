@@ -1,12 +1,12 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors'); // <-- PASO 1: IMPORTAR CORS
+const cors = require('cors');
 const pool = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors()); // <-- PASO 2: USAR CORS
+app.use(cors());
 app.use(express.json());
 
 // --- Rutas existentes ---
@@ -27,13 +27,11 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
-// --- NUEVA RUTA PARA OBTENER VERSÍCULOS ---
-// Esta ruta usa parámetros: :bookName, :chapter, :verse
+// RUTA PARA OBTENER UN SOLO VERSÍCULO
 app.get('/api/verse/:bookName/:chapter/:verse', async (req, res) => {
   const { bookName, chapter, verse } = req.params;
   try {
-    // La consulta ahora une las 3 tablas para obtener toda la información
-  const query = `
+    const query = `
     SELECT 
       w.word_id, w.text, w.lemma, w.pos, w.parsing, w.strongs,
       sl.transliteration, sl.gloss, sl.definition,
@@ -45,14 +43,10 @@ app.get('/api/verse/:bookName/:chapter/:verse', async (req, res) => {
     WHERE b.name = $1 AND w.chapter = $2 AND w.verse = $3
     ORDER BY w.position_in_verse;
   `;
-
     const result = await pool.query(query, [bookName, chapter, verse]);
-
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Versículo no encontrado.' });
     }
-
-    // El objeto de respuesta ahora incluye los nuevos campos
     const responseData = {
       reference: `${bookName} ${chapter}:${verse}`,
       words: result.rows.map(row => ({
@@ -63,12 +57,11 @@ app.get('/api/verse/:bookName/:chapter/:verse', async (req, res) => {
         parsing: row.parsing,
         strongs: row.strongs,
         transliteration: row.transliteration,
-        gloss: row.gloss, // La traducción corta
-        definition: row.definition, // La definición larga
-        user_translation: row.user_translation // <-- AÑADIR ESTE CAMPO
+        gloss: row.gloss,
+        definition: row.definition,
+        user_translation: row.user_translation
       }))
     };
-
     res.json(responseData);
   } catch (err) {
     console.error(`Error al obtener el versículo ${bookName} ${chapter}:${verse}`, err);
@@ -76,9 +69,7 @@ app.get('/api/verse/:bookName/:chapter/:verse', async (req, res) => {
   }
 });
 
-// --- NUEVAS RUTAS PARA POBLAR LOS SELECTORES ---
-
-// Ruta para obtener todos los libros
+// --- RUTAS PARA POBLAR LOS SELECTORES ---
 app.get('/api/books', async (req, res) => {
   try {
     const result = await pool.query('SELECT book_id, name FROM books ORDER BY book_id');
@@ -89,7 +80,6 @@ app.get('/api/books', async (req, res) => {
   }
 });
 
-// Ruta para obtener el número de capítulos de un libro
 app.get('/api/chapters/:bookId', async (req, res) => {
   const { bookId } = req.params;
   try {
@@ -101,7 +91,6 @@ app.get('/api/chapters/:bookId', async (req, res) => {
   }
 });
 
-// Ruta para obtener el número de versículos de un capítulo/libro
 app.get('/api/verses/:bookId/:chapter', async (req, res) => {
   const { bookId, chapter } = req.params;
   try {
@@ -113,7 +102,7 @@ app.get('/api/verses/:bookId/:chapter', async (req, res) => {
   }
 });
 
-// 1. Actualizar la información del léxico (definiciones, etc.)
+// --- RUTAS DE ACTUALIZACIÓN (PATCH) ---
 app.patch('/api/lexicon/:strongsId', async (req, res) => {
   const { strongsId } = req.params;
   const { transliteration, gloss, definition } = req.body;
@@ -129,7 +118,6 @@ app.patch('/api/lexicon/:strongsId', async (req, res) => {
   }
 });
 
-// 2. Actualizar el N° de Strong de una palabra específica
 app.patch('/api/word/:wordId', async (req, res) => {
     const { wordId } = req.params;
     const { strongs } = req.body;
@@ -142,7 +130,6 @@ app.patch('/api/word/:wordId', async (req, res) => {
     }
 });
 
-// 3. Crear o actualizar la traducción del usuario para una palabra
 app.patch('/api/translation/:wordId', async (req, res) => {
     const { wordId } = req.params;
     const { user_translation } = req.body;
@@ -161,7 +148,7 @@ app.patch('/api/translation/:wordId', async (req, res) => {
     }
 });
 
-// --- NUEVA RUTA PARA OBTENER UN CAPÍTULO COMPLETO ---
+// --- RUTA PARA OBTENER UN CAPÍTULO COMPLETO ---
 app.get('/api/chapter/:bookName/:chapter', async (req, res) => {
   const { bookName, chapter } = req.params;
   try {
@@ -178,21 +165,13 @@ app.get('/api/chapter/:bookName/:chapter', async (req, res) => {
       ORDER BY w.verse, w.position_in_verse;
     `;
     const result = await pool.query(query, [bookName, chapter]);
-
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Capítulo no encontrado.' });
     }
-
-    // Agrupamos las palabras por versículo
     const verses = result.rows.reduce((acc, row) => {
-      // Si el versículo no existe en el acumulador, lo creamos
       if (!acc[row.verse]) {
-        acc[row.verse] = {
-          verse: row.verse,
-          words: []
-        };
+        acc[row.verse] = { verse: row.verse, words: [] };
       }
-      // Añadimos la palabra al versículo correspondiente
       acc[row.verse].words.push({
         id: row.word_id,
         text: row.text,
@@ -207,13 +186,10 @@ app.get('/api/chapter/:bookName/:chapter', async (req, res) => {
       });
       return acc;
     }, {});
-
     const responseData = {
       reference: `${bookName} ${chapter}`,
-      // Convertimos el objeto de versículos en un array ordenado
       verses: Object.values(verses).sort((a, b) => a.verse - b.verse)
     };
-
     res.json(responseData);
   } catch (err) {
     console.error(`Error al obtener el capítulo ${bookName} ${chapter}`, err);
@@ -221,18 +197,14 @@ app.get('/api/chapter/:bookName/:chapter', async (req, res) => {
   }
 });
 
-// --- NUEVA RUTA PARA OBTENER RANGOS DE PASAJES ---
+// --- RUTA PARA OBTENER RANGOS DE PASAJES ---
 app.get('/api/passage/:range', async (req, res) => {
   const { range } = req.params;
-  // Expresión regular para entender formatos como "John 3:16" o "John 3:16-18"
   const singleVerseRegex = /(.+?)\s+(\d+):(\d+)$/;
   const verseRangeRegex = /(.+?)\s+(\d+):(\d+)-(\d+)$/;
-
   let bookName, chapter, startVerse, endVerse;
   let match = range.match(verseRangeRegex);
-
   if (match) {
-    // Coincide con un rango (ej. John 3:16-18)
     bookName = match[1].trim();
     chapter = parseInt(match[2]);
     startVerse = parseInt(match[3]);
@@ -240,7 +212,6 @@ app.get('/api/passage/:range', async (req, res) => {
   } else {
     match = range.match(singleVerseRegex);
     if (match) {
-      // Coincide con un solo versículo (ej. John 3:16)
       bookName = match[1].trim();
       chapter = parseInt(match[2]);
       startVerse = parseInt(match[3]);
@@ -249,14 +220,11 @@ app.get('/api/passage/:range', async (req, res) => {
       return res.status(400).json({ message: 'Formato de pasaje no reconocido. Use "Libro C:V" o "Libro C:V-V".' });
     }
   }
-
-  // Buscamos el nombre del libro en inglés en nuestra base de datos para manejar variaciones
   const bookResult = await pool.query('SELECT name FROM books WHERE name ILIKE $1', [bookName]);
   if (bookResult.rows.length === 0) {
       return res.status(404).json({ message: `Libro "${bookName}" no encontrado.` });
   }
   const correctBookName = bookResult.rows[0].name;
-
   try {
     const query = `
       SELECT w.word_id, w.verse, w.text, w.lemma, w.pos, w.parsing, w.strongs, sl.gloss, ut.user_translation
@@ -268,23 +236,66 @@ app.get('/api/passage/:range', async (req, res) => {
       ORDER BY w.verse, w.position_in_verse;
     `;
     const result = await pool.query(query, [correctBookName, chapter, startVerse, endVerse]);
-
-    // ... (El código para agrupar por versículos es idéntico al del endpoint /api/chapter/... )
     const verses = result.rows.reduce((acc, row) => {
       if (!acc[row.verse]) { acc[row.verse] = { verse: row.verse, words: [] }; }
       acc[row.verse].words.push({ id: row.word_id, text: row.text, lemma: row.lemma, pos: row.pos, parsing: row.parsing, strongs: row.strongs, gloss: row.gloss, user_translation: row.user_translation });
       return acc;
     }, {});
-
     const responseData = {
       reference: range,
       verses: Object.values(verses).sort((a, b) => a.verse - b.verse)
     };
     res.json(responseData);
-
   } catch (err) {
     console.error(`Error al obtener el pasaje ${range}`, err);
     res.status(500).json({ message: 'Error en el servidor.' });
+  }
+});
+
+// =======================================================
+// --- NUEVOS ENDPOINTS PARA NOTAS DE ESTUDIO ---
+// =======================================================
+
+// 1. OBTENER NOTAS PARA UN PASAJE (GET)
+app.get('/api/notes/:reference', async (req, res) => {
+  const { reference } = req.params;
+  try {
+    const result = await pool.query('SELECT content FROM study_notes WHERE reference = $1', [reference]);
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]); // Devuelve { content: "..." }
+    } else {
+      // Si no hay notas, es importante devolver un objeto con la propiedad 'content' vacía
+      res.json({ content: '' }); 
+    }
+  } catch (err) {
+    console.error('Error al obtener notas:', err);
+    res.status(500).send('Error en el servidor');
+  }
+});
+
+// 2. GUARDAR/ACTUALIZAR NOTAS (POST)
+app.post('/api/notes', async (req, res) => {
+  const { reference, content } = req.body;
+
+  if (!reference || content === undefined) {
+    return res.status(400).send('La referencia y el contenido son requeridos.');
+  }
+
+  try {
+    // Esta consulta usa "UPSERT": si la referencia existe, la actualiza (UPDATE).
+    // Si no existe, la inserta (INSERT).
+    const query = `
+      INSERT INTO study_notes (reference, content, updated_at)
+      VALUES ($1, $2, NOW())
+      ON CONFLICT (reference)
+      DO UPDATE SET content = $2, updated_at = NOW();
+    `;
+    await pool.query(query, [reference, content]);
+    res.status(200).send('Notas guardadas correctamente.');
+  } catch (err)
+    {
+    console.error('Error al guardar notas:', err);
+    res.status(500).send('Error en el servidor');
   }
 });
 
