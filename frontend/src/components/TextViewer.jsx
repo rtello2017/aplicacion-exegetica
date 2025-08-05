@@ -1,17 +1,14 @@
 import React from 'react';
 
 // --- Componente para una sola palabra ---
-// Se ha actualizado la lógica para manejar el número Strong correctamente.
-function Word({ wordData, onWordClick, onWordDragStart }) {
-  // --- LÓGICA DE STRONGS CORREGIDA ---
-  // Ahora comprueba si 'strongs' existe y no es nulo.
+// Incluye el manejador de doble clic y la lógica de Strongs corregida
+function Word({ wordData, onWordClick, onWordDragStart, onWordDoubleClick }) {
+  // Lógica de Strongs corregida para manejar números y formatear con "G"
   const hasStrongs = wordData.strongs != null;
-  // Formatea el número para que siempre sea una cadena con "G" al principio.
   const formattedStrongs = hasStrongs ? `G${wordData.strongs}` : null;
   const strongsUrl = hasStrongs ? `https://biblehub.com/greek/${wordData.strongs}.htm` : null;
-  // --- FIN DE LA CORRECCIÓN ---
 
-  // Lógica de concatenación para POS y parsing (sin cambios)
+  // Lógica de concatenación para POS y parsing
   const formattedPos = wordData.pos ? wordData.pos.replace(/-/g, ' ') : '';
   const formattedParsing = wordData.parsing ? wordData.parsing.replace(/-/g, ' ') : '';
   let combinedDisplay = formattedPos;
@@ -28,7 +25,6 @@ function Word({ wordData, onWordClick, onWordDragStart }) {
           target="_blank" 
           rel="noopener noreferrer"
         >
-          {/* Muestra el número Strong ya formateado */}
           {formattedStrongs}
         </a>
       ) : (
@@ -38,11 +34,12 @@ function Word({ wordData, onWordClick, onWordDragStart }) {
       {/* Línea 2: Código de análisis combinado */}
       <span className="parsing-code">{combinedDisplay}</span>
       
-      {/* Línea 3: Texto griego */}
+      {/* Línea 3: Texto griego con todos los eventos */}
       <span 
         className="greek-word-interlinear" 
         onClick={() => onWordClick(wordData)}
         onDragStart={(e) => onWordDragStart(e, wordData)}
+        onDoubleClick={() => onWordDoubleClick(wordData)}
         draggable
       >
         {wordData.text}
@@ -56,7 +53,8 @@ function Word({ wordData, onWordClick, onWordDragStart }) {
 
 
 // --- Componente principal del Visor de Texto ---
-function TextViewer({ verseData, onWordClick, onWordDragStart }) {
+// Pasa todas las props necesarias al componente Word
+function TextViewer({ verseData, onWordClick, onWordDragStart, onWordDoubleClick }) {
   if (!verseData || !verseData.verses) {
     return <p>Seleccione un pasaje para comenzar.</p>;
   }
@@ -73,7 +71,8 @@ function TextViewer({ verseData, onWordClick, onWordDragStart }) {
                 key={word.id} 
                 wordData={word} 
                 onWordClick={onWordClick}
-                onWordDragStart={onWordDragStart} 
+                onWordDragStart={onWordDragStart}
+                onWordDoubleClick={onWordDoubleClick}
               />
             ))}
           </div>
