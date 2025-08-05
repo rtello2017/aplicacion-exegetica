@@ -1,35 +1,73 @@
 import React from 'react';
 import './DiagramToolbar.css';
 
-// Herramientas estándar para diagramación sintáctica del Griego Koiné
+// Herramientas reconstruidas para una réplica 1:1 de la barra de Logos.
 const syntacticTools = {
-  select: { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 13l6 6m-6-6l-4 9 1.5 1.5 9-4-1.5-1.5-3-3zM4 4l9 4-3 3-4-9z"/></svg>, label: 'Seleccionar' },
-  text: { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7V6h16v1M9 18h6M12 6v12"/></svg>, label: 'Añadir Texto' },
-  
-  // Línea base con divisiones
-  baseline: { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/></svg>, label: 'Línea Base' },
-  subjectPredicateDivider: { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M12 12V4"/></svg>, label: 'Divisor Sujeto/Predicado' },
-  directObjectDivider: { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M16 12V8"/></svg>, label: 'Divisor Objeto Directo' },
-  predicateNominativeDivider: { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M14 12l-4-4"/></svg>, label: 'Divisor Predicado Nominativo' },
-
-  // Modificadores
-  modifierSlant: { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18L18 6"/></svg>, label: 'Modificador (Línea Inclinada)' },
-  modifierAngled: { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18l6-6h8"/></svg>, label: 'Modificador (Línea Angular)' },
-  
-  // Conjunciones y elementos compuestos
-  conjunctionDotted: { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 8v8m12-8v8M6 12h12" strokeDasharray="2 2"/></svg>, label: 'Conjunción (Compuestos)' },
-  
-  // Cláusulas subordinadas
-  clausePedestal: { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 12h8M12 12v6l-4 4h8l-4-4"/></svg>, label: 'Pedestal de Cláusula' },
-  
-  // Otros
-  appositiveBrackets: { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 4v16M15 4v16"/></svg>, label: 'Apositivo (Paréntesis)' },
-
+  // Grupo 1: Herramientas de Selección y Texto
+  select: { 
+    icon: <svg viewBox="0 0 24 24"><path fill="currentColor" d="M13.64,21.97L10.13,16.76L5.24,18.94L2.05,15.21L7.43,11.69L2.54,9.5L3.9,4.92L10.13,6.61L12.31,1.87L16.88,3.22L15.19,9.3L20.08,7.12L23.27,10.85L17.89,14.37L22.78,16.55L21.42,21.13L15.19,19.44L17.37,24.18L13.64,21.97Z" /></svg>, 
+    label: 'Seleccionar' 
+  },
+  text: { 
+    icon: <svg viewBox="0 0 24 24"><text x="4" y="20" fontSize="22" fontWeight="bold" fill="currentColor">T</text></svg>, 
+    label: 'Ingresar Texto' 
+  },
+  freeDraw: {
+    icon: <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14.06,9L15,9.94L5.92,19H5V18.08L14.06,9M17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3M14.06,6.19L3,17.25V21H6.75L17.81,9.94L14.06,6.19Z" /></svg>,
+    label: 'Dibujo Libre'
+  },
+  // Grupo 2: Líneas y Divisores
+  baseline: { 
+    icon: <svg viewBox="0 0 24 24"><path d="M2 12 H22" /></svg>, 
+    label: 'Línea Base' 
+  },
+  subjectPredicate: { 
+    icon: <svg viewBox="0 0 24 24"><path d="M2 12 H22 M12 12 V2" /></svg>, 
+    label: 'Sujeto / Predicado' 
+  },
+  directObject: { 
+    icon: <svg viewBox="0 0 24 24"><path d="M2 12 H22 M18 12 V8" /></svg>, 
+    label: 'Objeto Directo' 
+  },
+  predicateNominative: { 
+    icon: <svg viewBox="0 0 24 24"><path d="M2 12 H22 M18 12 L14 6" /></svg>, 
+    label: 'Predicado Nominativo' 
+  },
+  // Grupo 3: Modificadores
+  modifier: {
+    icon: <svg viewBox="0 0 24 24"><path d="M2 18 L22 6" /></svg>,
+    label: 'Modificador'
+  },
+  prepositionalPhrase: { 
+    icon: <svg viewBox="0 0 24 24"><path d="M2 18 L12 12 H22" /></svg>, 
+    label: 'Frase Preposicional' 
+  },
+  participle: {
+    icon: <svg viewBox="0 0 24 24"><path d="M2 12 H10 L14 18 H22" /></svg>,
+    label: 'Participio'
+  },
+  gerundInfinitive: {
+    icon: <svg viewBox="0 0 24 24"><path d="M2 12 H10 L14 6 H22 M10 12 V18" /></svg>,
+    label: 'Gerundio / Infinitivo'
+  },
+  // Grupo 4: Conjunciones y Cláusulas
+  conjunction: { 
+    icon: <svg viewBox="0 0 24 24"><path d="M4 6 V18 M20 6 V18 M4 12 H20" strokeDasharray="2 2" /></svg>, 
+    label: 'Conjunción' 
+  },
+  clausePedestal: { 
+    icon: <svg viewBox="0 0 24 24"><path d="M6 6 H18 M12 6 V14 L8 18 H16 L12 14" /></svg>, 
+    label: 'Pedestal de Cláusula' 
+  },
+  appositive: {
+    icon: <svg viewBox="0 0 24 24"><path d="M6 6 V18 M18 6 V18" /></svg>,
+    label: 'Apositivo'
+  }
 };
 
 function DiagramToolbar({ onSelectTool, selectedTool }) {
   return (
-    <div className="diagram-toolbar">
+    <div className="diagram-toolbar-vertical">
       {Object.entries(syntacticTools).map(([key, { icon, label }]) => (
         <button
           key={key}
@@ -43,5 +81,17 @@ function DiagramToolbar({ onSelectTool, selectedTool }) {
     </div>
   );
 }
+
+const style = document.createElement('style');
+style.innerHTML = `
+  .toolbar-button svg path, .toolbar-button svg line {
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+`;
+document.head.appendChild(style);
 
 export default DiagramToolbar;

@@ -1,0 +1,83 @@
+/* Contenedor principal para la leyenda */
+.legend-container {
+    margin: 15px 0;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden; /* Clave para que el borde redondeado funcione con el contenido */
+    background-color: #f9f9f9;
+}
+
+/* Botón para mostrar/ocultar la leyenda */
+.legend-toggle-button {
+    width: 100%;
+    padding: 12px 15px;
+    background-color: #f0f0f0;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 1em;
+    font-weight: bold;
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.legend-toggle-button:hover {
+    background-color: #e9e9e9;
+}
+
+/* Flecha para indicar el estado (abierto/cerrado) */
+.legend-arrow {
+    transition: transform 0.3s ease;
+}
+
+.legend-arrow.open {
+    transform: rotate(180deg);
+}
+
+/* Contenido de la leyenda que se muestra/oculta */
+.legend-content {
+    padding: 15px;
+    border-top: 1px solid #e0e0e0;
+    animation: fadeIn 0.5s ease; /* Animación de aparición */
+}
+
+/* Tabla de la leyenda */
+.legend-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.legend-table th, .legend-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.legend-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.legend-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.legend-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Animación para que el contenido aparezca suavemente */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

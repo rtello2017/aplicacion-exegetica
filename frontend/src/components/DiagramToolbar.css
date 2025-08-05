@@ -1,41 +1,41 @@
-.diagram-toolbar {
+/* Estilos para la nueva barra de herramientas vertical */
+.diagram-toolbar-vertical {
   display: flex;
   flex-direction: column;
-  background-color: #f8f9fa;
-  padding: 8px;
-  border-right: 1px solid #ddd;
-
-  /* --- CORRECCIÓN CLAVE --- */
-  flex-shrink: 0; /* Evita que la barra se encoja si la ventana es muy pequeña */
-  width: 60px;    /* Le damos un ancho fijo a la barra de herramientas */
+  background-color: #f0f0f0;
+  padding: 8px 4px;
+  border-right: 1px solid #ccc;
+  gap: 8px; /* Espacio entre botones */
 }
 
 .toolbar-button {
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-bottom: 8px;
-  padding: 8px;
+  background: none;
+  border: 1px solid transparent;
+  padding: 6px;
+  border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.2s;
-
-  /* --- CORRECCIÓN CLAVE --- */
-  /* Centramos el ícono SVG dentro del botón */
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .toolbar-button:hover {
-  background-color: #e9e9e9;
+  background-color: #e0e0e0;
+  border-color: #bbb;
 }
 
 .toolbar-button.selected {
-  background-color: #cce5ff;
-  border-color: #007bff;
+  background-color: #c7d7fe;
+  border-color: #8daaff;
 }
 
 .toolbar-button svg {
   width: 24px;
   height: 24px;
+  stroke: #333;
+}
+
+.toolbar-button.selected svg {
+  stroke: #2563eb;
 }
