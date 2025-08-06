@@ -252,19 +252,14 @@ app.get('/api/passage/:range', async (req, res) => {
   }
 });
 
-// =======================================================
-// --- NUEVOS ENDPOINTS PARA NOTAS DE ESTUDIO ---
-// =======================================================
-
-// 1. OBTENER NOTAS PARA UN PASAJE (GET)
+// --- ENDPOINTS PARA NOTAS DE ESTUDIO ---
 app.get('/api/notes/:reference', async (req, res) => {
   const { reference } = req.params;
   try {
     const result = await pool.query('SELECT content FROM study_notes WHERE reference = $1', [reference]);
     if (result.rows.length > 0) {
-      res.json(result.rows[0]); // Devuelve { content: "..." }
+      res.json(result.rows[0]);
     } else {
-      // Si no hay notas, es importante devolver un objeto con la propiedad 'content' vacía
       res.json({ content: '' }); 
     }
   } catch (err) {
@@ -273,17 +268,12 @@ app.get('/api/notes/:reference', async (req, res) => {
   }
 });
 
-// 2. GUARDAR/ACTUALIZAR NOTAS (POST)
 app.post('/api/notes', async (req, res) => {
   const { reference, content } = req.body;
-
   if (!reference || content === undefined) {
     return res.status(400).send('La referencia y el contenido son requeridos.');
   }
-
   try {
-    // Esta consulta usa "UPSERT": si la referencia existe, la actualiza (UPDATE).
-    // Si no existe, la inserta (INSERT).
     const query = `
       INSERT INTO study_notes (reference, content, updated_at)
       VALUES ($1, $2, NOW())
@@ -296,6 +286,54 @@ app.post('/api/notes', async (req, res) => {
     {
     console.error('Error al guardar notas:', err);
     res.status(500).send('Error en el servidor');
+  }
+});
+
+// =======================================================
+// --- ENDPOINTS PARA DIAGRAMAS SINTÁCTICOS ---
+// =======================================================
+
+// 1. OBTENER DIAGRAMA PARA UN PASAJE (GET)
+app.get('/api/diagrams/:reference', async (req, res) => {
+  const { reference } = req.params;
+  try {
+    const result = await pool.query('SELECT nodes, edges FROM diagrams WHERE reference = $1', [reference]);
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]);
+    } else {
+      res.status(404).json({ message: 'Diagrama no encontrado para esta referencia.' }); 
+    }
+  } catch (err) {
+    console.error('Error al obtener el diagrama:', err);
+    res.status(500).json({ message: 'Error en el servidor al obtener el diagrama.' });
+  }
+});
+
+// 2. GUARDAR/ACTUALIZAR DIAGRAMA (POST)
+app.post('/api/diagrams', async (req, res) => {
+  const { reference, nodes, edges } = req.body;
+
+  if (!reference || !nodes || !edges) {
+    return res.status(400).json({ message: 'La referencia, los nodos y las conexiones son requeridos.' });
+  }
+
+  try {
+    const query = `
+      INSERT INTO diagrams (reference, nodes, edges, updated_at)
+      VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (reference)
+      DO UPDATE SET 
+        nodes = EXCLUDED.nodes, 
+        edges = EXCLUDED.edges, 
+        updated_at = NOW();
+    `;
+    // ✅ CORRECCIÓN: Convertir los objetos a string JSON antes de enviar a la BD
+    await pool.query(query, [reference, JSON.stringify(nodes), JSON.stringify(edges)]);
+    
+    res.status(200).json({ message: 'Diagrama guardado correctamente.' });
+  } catch (err) {
+    console.error('Error al guardar el diagrama:', err);
+    res.status(500).json({ message: 'Error en el servidor al guardar el diagrama.' });
   }
 });
 
