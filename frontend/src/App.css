@@ -321,3 +321,26 @@ h1 {
     border: none !important;
   }
 }
+
+/* App.css */
+
+.diagram-top-controls {
+  display: flex;
+  gap: 10px; /* Añade espacio entre los botones */
+  margin-bottom: 10px;
+  justify-content: flex-start; /* Alinea los botones a la izquierda */
+}
+
+.add-passage-btn {
+  background-color: #007bff; /* Color azul primario */
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.add-passage-btn:hover {
+  background-color: #0056b3;
+}
