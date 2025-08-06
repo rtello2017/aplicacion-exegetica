@@ -18,11 +18,12 @@ import SyntaxDiagram from './components/SyntaxDiagram';
 import DiagramToolbar from './components/DiagramToolbar';
 import { TextNode } from './components/diagram-nodes/TextNode';
 import { ShapeNode } from './components/ShapeNode';
+// ✅ --- PASO 1: IMPORTAR EL NUEVO NODO DE DIBUJO LIBRE ---
+import { FreeDrawNode } from './components/FreeDrawNode';
 import Legend from './components/Legend';
 import StudyNotes from './components/StudyNotes';
 
 function DiagramApp() {
-  // Estados existentes (sin cambios)
   const [books, setBooks] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [verses, setVerses] = useState([]);
@@ -45,9 +46,16 @@ function DiagramApp() {
   const dragRef = useRef(null);
   const textViewerRef = useRef(null);
   const diagramWrapperRef = useRef(null);
-  const nodeTypes = useMemo(() => ({ textNode: TextNode, shapeNode: ShapeNode }), []);
+  
+  // ✅ --- PASO 2: AÑADIR EL NUEVO TIPO DE NODO ---
+  const nodeTypes = useMemo(() => ({ 
+    textNode: TextNode, 
+    shapeNode: ShapeNode,
+    freeDrawNode: FreeDrawNode // Registrar el nuevo nodo
+  }), []);
 
-  // Lógica de carga de datos (sin cambios)
+  // ... (El resto de tu archivo App.jsx permanece exactamente igual)
+  // --- LÓGICA DE CARGA DE DATOS ---
   useEffect(() => {
     fetch('http://localhost:4000/api/books')
       .then(res => res.json())
@@ -151,27 +159,21 @@ function DiagramApp() {
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  // ✅ --- FUNCIÓN `loadPassageIntoDiagram` MODIFICADA PARA AÑADIR MORFOLOGÍA ---
   const loadPassageIntoDiagram = () => {
     if (!verseData || !verseData.verses) return;
-    
     const newTextNodes = [];
     let yOffset = 100;
     if (nodes.length > 0) {
       yOffset = Math.max(...nodes.map(n => (n.position.y + (n.height || 40)))) + 60;
     }
-
     verseData.verses.forEach(verse => {
       verse.words.forEach((word, index) => {
-        // Formatear la morfología como en el visor de texto
         const pos = word.pos || '';
         const parsing = word.parsing ? word.parsing.replace(/-/g, ' ') : '';
         const morphology = parsing ? `${pos} - ${parsing}` : pos;
-
         newTextNodes.push({
           id: `text_${word.id}_${Math.random()}`,
           type: 'textNode',
-          // Añadir la morfología al objeto de datos del nodo
           data: { 
             label: word.text,
             morphology: morphology.trim()
@@ -181,7 +183,6 @@ function DiagramApp() {
       });
       yOffset += 100;
     });
-    
     setNodes(prevNodes => [...prevNodes, ...newTextNodes]);
   };
   

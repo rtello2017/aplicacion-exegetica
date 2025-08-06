@@ -1,0 +1,7 @@
+/* src/components/SyntaxDiagram.css */
+
+/* ✅ --- ESTA ES LA REGLA MÁGICA --- */
+/* Cuando el contenedor tiene la clase 'drawing-mode', fuerza el cursor a ser una cruz */
+.reactflow-wrapper.drawing-mode .react-flow__pane {
+  cursor: crosshair !important;
+}

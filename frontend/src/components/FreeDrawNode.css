@@ -1,0 +1,6 @@
+.free-draw-node {
+  width: 100%;
+  height: 100%;
+  /* El fondo es transparente para que solo se vea el trazo */
+  background-color: transparent; 
+}
