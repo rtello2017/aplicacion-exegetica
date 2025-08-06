@@ -104,17 +104,39 @@ function DiagramApp() {
             if (notesEditorRef.current) {
               notesEditorRef.current.setContent(savedNotes);
             }
+          });
+
+        fetch(`http://localhost:4000/api/diagrams/${encodeURIComponent(data.reference)}`)
+          .then(res => {
+            if (res.ok) {
+              return res.json();
+            }
+            setNodes([]);
+            setEdges([]);
+            return null;
           })
-          .catch(err => console.error('Error al cargar notas:', err));
+          .then(diagramData => {
+            if (diagramData) {
+              setNodes(diagramData.nodes || []);
+              setEdges(diagramData.edges || []);
+            }
+          })
+          .catch(err => console.error('Error al cargar el diagrama:', err));
+
       })
-      .catch(error => { console.error("Error al obtener el pasaje:", error); setVerseData(null); })
+      .catch(error => { 
+        console.error("Error al obtener el pasaje:", error); 
+        setVerseData(null);
+        setNodes([]);
+        setEdges([]);
+      })
       .finally(() => setLoading(false));
   }, [activeQuery, books]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { setActiveQuery({ type: 'select', bookId: selectedBookId, chapter: selectedChapter, verse: selectedVerse }); }, [selectedBookId, selectedChapter, selectedVerse]);
   
-  // --- MANEJADORES DE EVENTOS (sin cambios, excepto la función de exportación) ---
+  // --- MANEJADORES DE EVENTOS ---
   const handleRangeLoad = () => { if (rangeInput.trim()) setActiveQuery({ type: 'range', range: rangeInput }); };
   const handleNextChapter = () => { const num = parseInt(selectedChapter); if (num < chapters.length) { setSelectedChapter(num + 1); } else { handleNextBook(); } };
   const handlePrevChapter = async () => { const num = parseInt(selectedChapter); if (num > 1) { const prev = num - 1; const res = await fetch(`http://localhost:4000/api/verses/${selectedBookId}/${prev}`); const data = await res.json(); setSelectedChapter(prev); setSelectedVerse(data.verse_count); } else { handlePrevBook(); } };
@@ -129,24 +151,37 @@ function DiagramApp() {
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  // ✅ --- FUNCIÓN `loadPassageIntoDiagram` MODIFICADA PARA AÑADIR MORFOLOGÍA ---
   const loadPassageIntoDiagram = () => {
     if (!verseData || !verseData.verses) return;
+    
     const newTextNodes = [];
     let yOffset = 100;
     if (nodes.length > 0) {
       yOffset = Math.max(...nodes.map(n => (n.position.y + (n.height || 40)))) + 60;
     }
+
     verseData.verses.forEach(verse => {
       verse.words.forEach((word, index) => {
+        // Formatear la morfología como en el visor de texto
+        const pos = word.pos || '';
+        const parsing = word.parsing ? word.parsing.replace(/-/g, ' ') : '';
+        const morphology = parsing ? `${pos} - ${parsing}` : pos;
+
         newTextNodes.push({
           id: `text_${word.id}_${Math.random()}`,
           type: 'textNode',
-          data: { label: word.text },
+          // Añadir la morfología al objeto de datos del nodo
+          data: { 
+            label: word.text,
+            morphology: morphology.trim()
+          },
           position: { x: index * 100 + 20, y: yOffset },
         });
       });
       yOffset += 100;
     });
+    
     setNodes(prevNodes => [...prevNodes, ...newTextNodes]);
   };
   
@@ -169,6 +204,35 @@ function DiagramApp() {
     .catch(err => {
       console.error('Error al guardar notas:', err);
       alert('Error de conexión al guardar las notas.');
+    });
+  };
+
+  const handleSaveDiagram = () => {
+    if (!verseData || !verseData.reference) {
+      alert('Por favor, seleccione un pasaje antes de guardar el diagrama.');
+      return;
+    }
+    fetch('http://localhost:4000/api/diagrams', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        reference: verseData.reference,
+        nodes: nodes,
+        edges: edges,
+      }),
+    })
+    .then(res => {
+      if (res.ok) {
+        alert('Diagrama guardado correctamente.');
+      } else {
+        alert('Error al guardar el diagrama.');
+      }
+    })
+    .catch(err => {
+      console.error('Error al guardar el diagrama:', err);
+      alert('Error de conexión al guardar el diagrama.');
     });
   };
 
@@ -231,15 +295,12 @@ function DiagramApp() {
         } else if (action === 'pdf') {
             const imgData = canvas.toDataURL('image/png');
             
-            // ✅ --- INICIO DE LA CORRECCIÓN PARA EL ESCALADO DEL PDF ---
-            // 1. Crear un PDF estándar A4 en horizontal (landscape).
             const pdf = new jsPDF({ 
-              orientation: 'l', // 'l' para landscape (horizontal)
-              unit: 'mm',       // Usar milímetros como unidad
-              format: 'a4'      // Formato de página estándar
+              orientation: 'l',
+              unit: 'mm',
+              format: 'a4'
             });
 
-            // 2. Calcular las dimensiones de la página y la imagen para que encaje.
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
             const canvasAspectRatio = canvas.width / canvas.height;
@@ -247,16 +308,13 @@ function DiagramApp() {
             let imgWidth = pageWidth;
             let imgHeight = imgWidth / canvasAspectRatio;
 
-            // Si la imagen es demasiado alta para la página, se ajusta por altura.
             if (imgHeight > pageHeight) {
               imgHeight = pageHeight;
               imgWidth = imgHeight * canvasAspectRatio;
             }
 
-            // 3. Añadir la imagen al PDF, escalada para que quepa.
             pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            // ✅ --- FIN DE LA CORRECCIÓN ---
-
+            
             const filename = `${verseData?.reference || 'pasaje'}_con_notas.pdf`;
             pdf.save(filename);
         }
@@ -264,7 +322,7 @@ function DiagramApp() {
       });
   };
 
-  // --- RENDERIZADO DEL COMPONENTE (sin cambios) ---
+  // --- RENDERIZADO DEL COMPONENTE ---
   return (
     <div className="app-container">
       <h1>Proyecto Exegética Bíblica</h1>
@@ -285,6 +343,7 @@ function DiagramApp() {
           <div id="diagram-printable-area" className="printable-content" style={{ display: activeTab === 'diagram' ? 'block' : 'none' }}>
             <div className="diagram-main-container">
                <div className="diagram-top-controls">
+                <button onClick={handleSaveDiagram} className="save-diagram-btn">Guardar Diagrama</button>
                 <button onClick={loadPassageIntoDiagram} className="add-passage-btn">Añadir Pasaje al Diagrama</button>
                 <button onClick={handleClearDiagram} className="clear-btn">Limpiar Lienzo</button>
               </div>

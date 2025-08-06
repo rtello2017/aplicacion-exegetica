@@ -1,41 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
+import './TextNode.css'; // Añadimos un archivo CSS para los estilos
 
 export const TextNode = ({ data, selected }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(data.label);
 
+  // Este efecto asegura que si el nodo se actualiza desde fuera, el texto cambie.
+  useEffect(() => {
+    setLabel(data.label);
+  }, [data.label]);
+
   const onDoubleClick = () => setIsEditing(true);
+
   const onBlur = () => {
     setIsEditing(false);
-    data.label = label;
+    // Mantenemos tu lógica original para actualizar el dato.
+    data.label = label; 
+  };
+  
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      onBlur();
+    }
   };
 
-  if (isEditing) {
-    return (
-      <input
-        type="text" value={label} onChange={(e) => setLabel(e.target.value)}
-        onBlur={onBlur} autoFocus
-        style={{ fontSize: '1.2em', padding: '5px', border: '1px solid #007bff', background: 'white' }}
-      />
-    );
-  }
-
   return (
+    // Contenedor principal que reacciona a la selección
     <div 
-      className="nowheel" 
+      className="text-node-wrapper"
+      style={{ border: selected ? '1px dashed #007bff' : '1px solid #ccc' }}
       onDoubleClick={onDoubleClick}
-      style={{
-        padding: '2px',
-        background: 'transparent',
-        border: selected ? '1px dashed #999' : '1px solid transparent',
-        borderRadius: '3px',
-        fontSize: '1.2em',
-        cursor: 'pointer'
-      }}
     >
+      {/* Manijas de conexión siempre presentes pero invisibles */}
       <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
-      {label || 'Doble clic para editar'}
+      
+      {/* ✅ SECCIÓN NUEVA: Muestra la morfología si existe */}
+      {data.morphology && (
+        <div className="morphology-text">
+          {data.morphology}
+        </div>
+      )}
+
+      {/* Lógica de edición existente, ahora dentro del nuevo contenedor */}
+      {isEditing ? (
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          onBlur={onBlur}
+          onKeyDown={handleKeyDown}
+          autoFocus
+          className="text-node-input"
+        />
+      ) : (
+        <div className="greek-text-label">
+          {label || 'Doble clic'}
+        </div>
+      )}
+      
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
     </div>
   );

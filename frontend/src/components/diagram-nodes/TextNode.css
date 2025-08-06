@@ -1,0 +1,42 @@
+/* src/components/diagram-nodes/TextNode.css */
+
+.text-node-wrapper {
+  background: #ffffff;
+  border-radius: 5px;
+  padding: 5px 10px;
+  text-align: center;
+  font-family: 'Times New Roman', serif;
+  min-width: 80px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+.morphology-text {
+  font-size: 11px;
+  font-weight: bold;
+  color: #007bff; /* Color azul, como en la imagen de ejemplo */
+  margin-bottom: 4px;
+  font-family: Arial, sans-serif;
+  user-select: none; /* Evita que se seleccione al hacer doble clic */
+}
+
+.greek-text-label {
+  font-size: 22px;
+  color: #333;
+  padding: 2px 5px; /* Pequeño padding para que sea más fácil hacer clic */
+}
+
+.text-node-input {
+  font-size: 22px;
+  font-family: 'Times New Roman', serif;
+  padding: 0;
+  border: none;
+  background-color: #f0f8ff;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.text-node-input:focus {
+  outline: none;
+}

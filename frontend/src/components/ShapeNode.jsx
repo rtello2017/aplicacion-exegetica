@@ -13,12 +13,13 @@ const ShapeRenderer = ({ shapeType, isDropTarget }) => {
     };
     
     let shapeElement;
-    const baselineY = 50;
+    const baselineY = 50; // Línea media de referencia en el viewBox de 100x100
 
     // Cada 'case' corresponde a una herramienta de la barra de herramientas.
     switch (shapeType) {
-        case 'baseline':
-            shapeElement = <line x1="0" y1={baselineY} x2="100" y2={baselineY} {...style} />;
+        case 'line':
+        case 'diagonalLine':
+            shapeElement = <path d="M 5 95 L 95 5" {...style} />;
             break;
         case 'subjectPredicate':
             shapeElement = <path d={`M 0 ${baselineY} H 100 M 50 ${baselineY} V 5`} {...style} />;
@@ -26,30 +27,25 @@ const ShapeRenderer = ({ shapeType, isDropTarget }) => {
         case 'directObject':
             shapeElement = <path d={`M 0 ${baselineY} H 100 M 85 ${baselineY} V 30`} {...style} />;
             break;
-        case 'predicateNominative':
-            shapeElement = <path d={`M 0 ${baselineY} H 100 M 85 ${baselineY} L 70 5`} {...style} />;
+        case 'indirectObject':
+            shapeElement = <path d={`M 5 ${baselineY+45} L 50 5 H 100`} {...style} />;
+            break;
+
+        // ✅ --- FORMAS CORREGIDAS CON TUS PATHS EXACTOS ---
+        case 'leftConjunction':
+            // Path: M 0 0 L 2 -2 H 4 M 2 -2 L 0 0 L 2 2 H 4 M 2 2 L 1 1 L 1 -1
+            shapeElement = <path d="M 10 50 L 50 10 H 90 M 50 10 L 10 50 L 50 90 H 90 M 50 90 L 30 70 L 30 30" {...style} />;
             break;
         case 'modifier':
-             shapeElement = <path d="M 5 95 L 95 5" {...style} />;
-             break;
-        case 'prepositionalPhrase':
-             shapeElement = <path d="M 5 95 L 50 50 H 100" {...style} />;
-             break;
-        case 'participle':
-             shapeElement = <path d="M 5 50 H 40 L 60 95 H 95" {...style} />;
-             break;
-        case 'gerundInfinitive':
-             shapeElement = <path d="M 5 50 H 40 L 60 5 H 95 M 40 50 V 95" {...style} />;
-             break;
-        case 'conjunction':
-            shapeElement = <path d="M 15 20 V 80 M 85 20 V 80 M 15 50 H 85" {...style} strokeDasharray="5 5" />;
+            // Path: M 0 0 L 2 2 H 6
+            shapeElement = <path d="M 5 5 L 35 35 H 95" {...style} />;
             break;
-        case 'clausePedestal':
-            shapeElement = <path d="M 25 25 H 75 M 50 25 V 60 L 33 90 H 67 L 50 60" {...style} />;
+        case 'leftArc':
+            // Path: M 0 0 L 1 0 L 1 -2 L 4 -2 M 1 -2 L 1 2 L 4 2
+            shapeElement = <path d="M 10 50 L 25 50 L 25 10 H 85 M 25 10 L 25 90 H 85" {...style} />;
             break;
-        case 'appositive':
-            shapeElement = <path d="M 20 5 V 95 M 80 5 V 95" {...style} />;
-            break;
+        // --- FIN DE LA CORRECCIÓN ---
+            
         case 'freeDraw':
             shapeElement = <rect x="0" y="0" width="100" height="100" fill="rgba(0,0,0,0.02)" />;
             break;
@@ -69,7 +65,6 @@ const ShapeRenderer = ({ shapeType, isDropTarget }) => {
 export const ShapeNode = ({ id, data, selected }) => {
   const { setNodes } = useReactFlow();
 
-  // Lógica de rotación corregida y funcional.
   const onRotateStart = (event) => {
     event.preventDefault();
     const nodeElement = event.target.closest('.react-flow__node');
@@ -84,7 +79,7 @@ export const ShapeNode = ({ id, data, selected }) => {
       const dy = moveEvent.clientY - center.y;
       const radians = Math.atan2(dy, dx);
       let degrees = radians * (180 / Math.PI);
-      degrees += 90; // Ajuste para que 0 grados sea hacia arriba.
+      degrees += 90;
 
       setNodes((nds) =>
         nds.map((n) => {
@@ -121,14 +116,13 @@ export const ShapeNode = ({ id, data, selected }) => {
         minHeight={40}
       />
       
-      {/* Manjeador de Rotación (visible solo cuando el nodo está seleccionado) */}
       {selected && (
         <div
-          className="nodrag" // Evita que arrastrar el manejador mueva el nodo.
+          className="nodrag"
           onMouseDown={onRotateStart}
           style={{
             position: 'absolute',
-            top: '-25px', // Coloca el manejador fuera del nodo para fácil acceso.
+            top: '-25px',
             left: 'calc(50% - 10px)',
             width: '20px',
             height: '20px',
@@ -137,7 +131,7 @@ export const ShapeNode = ({ id, data, selected }) => {
             borderRadius: '50%',
             cursor: 'alias',
             zIndex: 11,
-            transform: `rotate(-${data.rotation || 0}deg)`, // Mantiene el manejador siempre vertical.
+            transform: `rotate(-${data.rotation || 0}deg)`,
           }}
         />
       )}

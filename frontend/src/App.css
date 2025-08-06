@@ -344,3 +344,19 @@ h1 {
 .add-passage-btn:hover {
   background-color: #0056b3;
 }
+
+/* App.css */
+
+.save-diagram-btn {
+  background-color: #28a745; /* Color verde de éxito */
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.save-diagram-btn:hover {
+  background-color: #218838;
+}
