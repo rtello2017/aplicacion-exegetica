@@ -11,7 +11,6 @@ function PassageSelector({
 }) {
   return (
     <div className="passage-selector-container">
-      <h2>Seleccionar Pasaje</h2>
       <div className="selectors">
         <div className="selector-group">
           <label htmlFor="book">Libro</label>

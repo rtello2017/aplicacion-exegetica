@@ -105,3 +105,86 @@ hr { border: none; border-top: 1px solid var(--color-border); margin: 20px 0; }
     padding: 10px;
     border-radius: 4px;
 }
+
+.stats-container {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f0f2f5;
+  border-radius: 8px;
+}
+
+.stats-container p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.concordance-button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  text-align: center;
+}
+
+.concordance-button:hover {
+  background-color: #0056b3;
+}
+
+.popup-footer {
+  text-align: right;
+  margin-top: 15px;
+}
+
+.form-field {
+  /* Activa el modelo de caja flexible */
+  display: flex;
+
+  /* Alinea los elementos verticalmente al centro */
+  align-items: center;
+
+  /* Añade un poco de espacio entre cada línea */
+  margin-bottom: 2px;
+}
+
+.form-field label {
+  /* Añade un espacio a la derecha de la etiqueta */
+  margin-right: 8px;
+
+  /* Opcional: Fija un ancho para que los inputs queden perfectamente alineados en vertical */
+  width: 90px;
+}
+
+* --- Añade estas reglas a tu archivo AnalysisPopup.css --- */
+
+/* Estilos para el nuevo contenedor del encabezado */
+.popup-header {
+  display: flex; /* Activa Flexbox */
+  justify-content: space-between; /* Empuja el título a la izquierda y el botón a la derecha */
+  align-items: center; /* Alinea verticalmente el título y el botón */
+  margin-bottom: 1rem; /* Añade un espacio debajo del encabezado */
+}
+
+/* Estilos para el enlace del código Strong para que se integre mejor */
+.popup-header a {
+  color: inherit; /* Hereda el color del texto del h2 */
+  text-decoration: underline; /* Mantiene el subrayado para indicar que es un enlace */
+  cursor: pointer;
+}
+
+.popup-header a:hover {
+  text-decoration: none; /* Opcional: quita el subrayado al pasar el mouse */
+}
+
+/* Estilos para el botón movido al encabezado */
+.edit-button-header {
+  /* Puedes ajustar estos estilos si es necesario */
+  padding: 8px 16px;
+  margin-left: 16px; /* Añade espacio a la izquierda del botón */
+  white-space: nowrap; /* Evita que el texto del botón se parta en dos líneas */
+}
