@@ -289,11 +289,7 @@ app.post('/api/notes', async (req, res) => {
   }
 });
 
-// =======================================================
 // --- ENDPOINTS PARA DIAGRAMAS SINTÁCTICOS ---
-// =======================================================
-
-// 1. OBTENER DIAGRAMA PARA UN PASAJE (GET)
 app.get('/api/diagrams/:reference', async (req, res) => {
   const { reference } = req.params;
   try {
@@ -309,14 +305,11 @@ app.get('/api/diagrams/:reference', async (req, res) => {
   }
 });
 
-// 2. GUARDAR/ACTUALIZAR DIAGRAMA (POST)
 app.post('/api/diagrams', async (req, res) => {
   const { reference, nodes, edges } = req.body;
-
   if (!reference || !nodes || !edges) {
     return res.status(400).json({ message: 'La referencia, los nodos y las conexiones son requeridos.' });
   }
-
   try {
     const query = `
       INSERT INTO diagrams (reference, nodes, edges, updated_at)
@@ -327,9 +320,7 @@ app.post('/api/diagrams', async (req, res) => {
         edges = EXCLUDED.edges, 
         updated_at = NOW();
     `;
-    // ✅ CORRECCIÓN: Convertir los objetos a string JSON antes de enviar a la BD
     await pool.query(query, [reference, JSON.stringify(nodes), JSON.stringify(edges)]);
-    
     res.status(200).json({ message: 'Diagrama guardado correctamente.' });
   } catch (err) {
     console.error('Error al guardar el diagrama:', err);
@@ -337,6 +328,82 @@ app.post('/api/diagrams', async (req, res) => {
   }
 });
 
+// =======================================================
+// --- ✅ NUEVOS ENDPOINTS PARA CONCORDANCIA ---
+// =======================================================
+
+// 1. OBTENER ESTADÍSTICAS DE FRECUENCIA
+app.get('/api/word/stats/:lemma/:text', async (req, res) => {
+    const { lemma, text } = req.params;
+    try {
+        const lemmaQuery = "SELECT count(*) FROM words WHERE lemma = $1";
+        const textQuery = "SELECT count(*) FROM words WHERE text = $1";
+
+        const [lemmaResult, textResult] = await Promise.all([
+            pool.query(lemmaQuery, [lemma]),
+            pool.query(textQuery, [text])
+        ]);
+
+        res.json({
+            lemmaCount: parseInt(lemmaResult.rows[0].count, 10),
+            textCount: parseInt(textResult.rows[0].count, 10)
+        });
+    } catch (err) {
+        console.error('Error al obtener estadísticas de la palabra:', err);
+        res.status(500).json({ message: 'Error en el servidor.' });
+    }
+});
+
+// 2. OBTENER CONCORDANCIA
+app.get('/api/word/concordance/:lemma/:text', async (req, res) => {
+    const { lemma, text } = req.params;
+    try {
+        const concordanceQuery = `
+            SELECT b.name, w.chapter, w.verse, w.text, w.lemma
+            FROM words w
+            JOIN books b ON w.book_id = b.book_id
+            WHERE w.lemma = $1 OR w.text = $2
+            ORDER BY w.book_id, w.chapter, w.verse, w.position_in_verse;
+        `;
+        const result = await pool.query(concordanceQuery, [lemma, text]);
+
+        // Agrupar palabras por versículo
+        const verses = result.rows.reduce((acc, row) => {
+            const key = `${row.name} ${row.chapter}:${row.verse}`;
+            if (!acc[key]) {
+                acc[key] = {
+                    reference: key,
+                    words: [],
+                    isLemmaMatch: false,
+                    isTextMatch: false
+                };
+            }
+            acc[key].words.push(row.text);
+            if (row.lemma === lemma) acc[key].isLemmaMatch = true;
+            if (row.text === text) acc[key].isTextMatch = true;
+            return acc;
+        }, {});
+
+        // Separar en dos listas
+        const lemmaOccurrences = [];
+        const textOccurrences = [];
+
+        Object.values(verses).forEach(verse => {
+            const verseText = verse.words.join(' ');
+            if (verse.isLemmaMatch) {
+                lemmaOccurrences.push({ reference: verse.reference, text: verseText });
+            }
+            if (verse.isTextMatch) {
+                textOccurrences.push({ reference: verse.reference, text: verseText });
+            }
+        });
+
+        res.json({ lemmaOccurrences, textOccurrences });
+    } catch (err) {
+        console.error('Error al obtener la concordancia:', err);
+        res.status(500).json({ message: 'Error en el servidor.' });
+    }
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
