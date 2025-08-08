@@ -1,14 +1,15 @@
 import React from 'react';
+// MODIFICACIÓN: Importamos las funciones desde el archivo de utilidades
+import { getFullPosName, parseDetailedMorphology } from '../utils/morphologyParser';
 
 // --- Componente para una sola palabra ---
-// Incluye el manejador de doble clic y la lógica de Strongs corregida
 function Word({ wordData, onWordClick, onWordDragStart, onWordDoubleClick }) {
-  // Lógica de Strongs corregida para manejar números y formatear con "G"
+  // Lógica de Strongs
   const hasStrongs = wordData.strongs != null;
   const formattedStrongs = hasStrongs ? `G${wordData.strongs}` : null;
   const strongsUrl = hasStrongs ? `https://biblehub.com/greek/${wordData.strongs}.htm` : null;
 
-  // Lógica de concatenación para POS y parsing
+  // Lógica de visualización para el interlineal
   const formattedPos = wordData.pos ? wordData.pos.replace(/-/g, ' ') : '';
   const formattedParsing = wordData.parsing ? wordData.parsing.replace(/-/g, ' ') : '';
   let combinedDisplay = formattedPos;
@@ -16,15 +17,16 @@ function Word({ wordData, onWordClick, onWordDragStart, onWordDoubleClick }) {
     combinedDisplay += ` - ${formattedParsing}`;
   }
 
+  // MODIFICACIÓN: Obtenemos la información parseada para el tooltip
+  const tooltipPosInfo = getFullPosName(wordData.pos);
+  const tooltipParsingInfo = parseDetailedMorphology(wordData.parsing, wordData.pos);
+
   return (
+    // El contenedor principal ahora tiene la clase 'word-stack' y el tooltip dentro
     <div className="word-stack">
       {/* Línea 1: Número Strong */}
       {hasStrongs ? (
-        <a 
-          href={strongsUrl} 
-          target="_blank" 
-          rel="noopener noreferrer"
-        >
+        <a href={strongsUrl} target="_blank" rel="noopener noreferrer">
           {formattedStrongs}
         </a>
       ) : (
@@ -47,13 +49,19 @@ function Word({ wordData, onWordClick, onWordDragStart, onWordDoubleClick }) {
       
       {/* Línea 4: Traducción del usuario */}
       <span className="translation">{wordData.user_translation}</span>
+
+      {/* MODIFICACIÓN: El nuevo tooltip */}
+      <div className="word-tooltip">
+        <p><strong>Raíz:</strong> {wordData.lemma || 'N/A'}</p>
+        <p><strong>Categoría:</strong> {tooltipPosInfo.name}</p>
+        <p><strong>Análisis:</strong> {tooltipParsingInfo.description}</p>
+      </div>
     </div>
   );
 }
 
 
 // --- Componente principal del Visor de Texto ---
-// Pasa todas las props necesarias al componente Word
 function TextViewer({ verseData, onWordClick, onWordDragStart, onWordDoubleClick }) {
   if (!verseData || !verseData.verses) {
     return <p>Seleccione un pasaje para comenzar.</p>;

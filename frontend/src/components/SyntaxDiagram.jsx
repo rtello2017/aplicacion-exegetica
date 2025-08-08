@@ -161,7 +161,9 @@ function SyntaxDiagram({ nodes, setNodes, edges, setEdges, nodeTypes, selectedTo
         x: position.x - targetParent.positionAbsolute.x,
         y: position.y - targetParent.positionAbsolute.y - 15,
       },
-      data: { label: draggedData.word.text, morphology: draggedData.word.morphology },
+      // ANTES: data: { label: draggedData.word.text, morphology: draggedData.word.morphology },
+      // AHORA:
+      data: { wordData: draggedData.word }, // Pasamos el objeto completo
       parentNode: targetParent.id,
       extent: 'parent',
     };

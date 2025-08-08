@@ -1,7 +1,7 @@
 const partOfSpeechMap = { 'N-': 'Sustantivo', 'V-': 'Verbo', 'A-': 'Adjetivo', 'P-': 'Pronombre Personal', 'R-': 'Preposición', 'C-': 'Conjunción', 'D-': 'Adverbio', 'I-': 'Interjección', 'X-': 'Partícula', 'RA': 'Artículo', 'RR': 'Pronombre Relativo', 'RP': 'Pronombre Personal', 'RD': 'Pronombre Demostrativo' };
 const personMap = { '1': '1ra Persona', '2': '2da Persona', '3': '3ra Persona' };
 const numberMap = { 'S': 'Singular', 'P': 'Plural' };
-const tenseMap = { 'P': 'Presente', 'I': 'Imperfecto', 'F': 'Futuro', 'A': 'Aoristo', 'X': 'Perfecto', 'Y': 'Pluscuamperfecto' };
+const tenseMap = { 'P': 'Presente', 'I': 'Imperfecto', 'F': 'Futuro', 'A': 'Aoristo', 'R': 'Perfecto', 'Y': 'Pluscuamperfecto' };
 const voiceMap = { 'A': 'Activa', 'M': 'Media', 'P': 'Pasiva' };
 const moodMap = { 'I': 'Indicativo', 'D': 'Imperativo', 'S': 'Subjuntivo', 'O': 'Optativo', 'N': 'Infinitivo', 'P': 'Participio' };
 const caseMap = { 'N': 'Nominativo', 'G': 'Genitivo', 'D': 'Dativo', 'A': 'Acusativo', 'V': 'Vocativo' };

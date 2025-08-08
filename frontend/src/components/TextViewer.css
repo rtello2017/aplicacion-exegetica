@@ -10,7 +10,6 @@
   padding-bottom: 10px;
 }
 
-/* Contenedor principal para la vista interlineal */
 .interlinear-verse {
   display: flex;
   flex-direction: row;
@@ -18,19 +17,20 @@
   justify-content: flex-start;
   text-align: center;
   line-height: 1.5;
-  gap: 15px; /* Espacio horizontal entre las "pilas" de palabras */
+  gap: 15px;
 }
 
-/* Cada palabra es una columna vertical */
 .word-stack {
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centra el contenido de la pila */
+  align-items: center;
   padding: 5px;
   cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.2s ease-in-out;
-  min-width: 60px; /* Ancho mínimo para cada palabra */
+  min-width: 60px;
+  /* MODIFICACIÓN: Posicionamiento relativo para anclar el tooltip */
+  position: relative; 
 }
 
 .word-stack:hover {
@@ -55,7 +55,6 @@
   font-style: italic;
 }
 
-/* Contenedor para un versículo completo (número + palabras) */
 .verse-block {
   display: flex;
   align-items: flex-start;
@@ -67,4 +66,49 @@
   margin-right: 10px;
   font-size: 1.2em;
   color: #888;
+}
+
+/* --- MODIFICACIÓN: ESTILOS PARA EL TOOLTIP --- */
+.word-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  width: 280px;
+  background-color: #282c34;
+  color: #fff;
+  text-align: left;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.9rem;
+  position: absolute;
+  z-index: 10;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: opacity 0.2s ease-in-out;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.word-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #282c34 transparent transparent transparent;
+}
+
+.word-stack:hover .word-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.word-tooltip p {
+    margin: 4px 0;
+    line-height: 1.4;
+}
+
+.word-tooltip strong {
+    color: #61dafb;
 }
