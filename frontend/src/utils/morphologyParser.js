@@ -21,7 +21,7 @@ const legendData = [
 
 // Mapas de equivalencias morfológicas
 const personMap = { '1': '1 Persona', '2': '2 Persona', '3': '3 Persona' };
-const tenseMap = { 'P': 'Presente', 'I': 'Imperfecto', 'F': 'Futuro', 'A': 'Aoristo', 'R': 'Perfecto', 'L': 'Pluscuamperfecto' };
+const tenseMap = { 'P': 'Presente', 'I': 'Imperfecto', 'F': 'Futuro', 'A': 'Aoristo', 'R': 'Perfecto', 'L': 'Pluscuamperfecto', 'X': 'Perfecto' };
 const voiceMap = { 'A': 'Activo', 'M': 'Medio', 'P': 'Pasivo' };
 const moodMap = { 'I': 'Indicativo', 'S': 'Subjuntivo', 'O': 'Optativo', 'M': 'Imperativo', 'N': 'Infinitivo', 'P': 'Participio' };
 const numberMap = { 'S': 'Singular', 'P': 'Plural' };
