@@ -1,4 +1,6 @@
 import React from 'react';
+// ✅ 1. Importar el objeto de configuración.
+import { useLanguage } from '../context/LanguageContext'; 
 
 // --- Iconos SVG para cada botón ---
 const icons = {
@@ -18,20 +20,25 @@ function PassageNavigator({
   onNextBook,
   onAddPassage,
   onPrint,
-  onExportPdf 
+  onExportPdf
 }) {
+
+  // ✅ 3. Obtener los textos para el idioma actual.
+  const { localized } = useLanguage();    
+
   return (
     <div className="passage-navigator">
       <div className="navigation-group">
-        <button onClick={onPrevBook} title="Libro Anterior">{icons.first}</button>
-        <button onClick={onPrevVerse} title="Versículo Anterior">{icons.prev}</button>
-        <button onClick={onNextVerse} title="Siguiente Versículo">{icons.next}</button>
-        <button onClick={onNextBook} title="Siguiente Libro">{icons.last}</button>
+        {/* ✅ 4. Usar los textos localizados en los 'title' de los botones. */}
+        <button onClick={onPrevBook} title={localized.ui.passageNavigator.prevBook}>{icons.first}</button>
+        <button onClick={onPrevVerse} title={localized.ui.passageNavigator.prevVerse}>{icons.prev}</button>
+        <button onClick={onNextVerse} title={localized.ui.passageNavigator.nextVerse}>{icons.next}</button>
+        <button onClick={onNextBook} title={localized.ui.passageNavigator.nextBook}>{icons.last}</button>
       </div>
       <div className="action-group">
-        <button onClick={onAddPassage} title="Añadir Pasaje al Lienzo">{icons.add}</button>
-        <button onClick={onPrint} title="Imprimir Pasaje">{icons.print}</button>
-        <button onClick={onExportPdf} title="Exportar Pasaje a PDF">{icons.pdf}</button>
+        <button onClick={onAddPassage} title={localized.ui.passageNavigator.add}>{icons.add}</button>
+        <button onClick={onPrint} title={localized.ui.passageNavigator.print}>{icons.print}</button>
+        <button onClick={onExportPdf} title={localized.ui.passageNavigator.exportPdf}>{icons.pdf}</button>
       </div>
     </div>
   );

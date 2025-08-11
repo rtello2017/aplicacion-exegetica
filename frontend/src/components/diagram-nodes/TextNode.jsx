@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import './TextNode.css'; // Añadimos un archivo CSS para los estilos
 
+import { useLanguage } from '../context/LanguageContext';
+
 export const TextNode = ({ data, selected }) => {
+
+  const { localized } = useLanguage();  
+
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(data.label);
 
@@ -55,7 +60,7 @@ export const TextNode = ({ data, selected }) => {
         />
       ) : (
         <div className="greek-text-label">
-          {label || 'Doble clic'}
+          {label || localized.ui.diagramNode.textPlaceholder}
         </div>
       )}
       

@@ -20,13 +20,14 @@ import StudyNotes from './components/StudyNotes';
 // --- NUEVO DIAGRAMADOR CONECTADO ---
 import SyntaxDiagram from './components/SyntaxDiagram';
 
+// Importamos el nuevo LanguageProvider
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 
 function DiagramApp() {
   // --- ESTADO GENERAL DE LA APLICACIÓN ---
-  const [books, setBooks] = useState([]);
-  const [chapters, setChapters] = useState([]);
-  const [verses, setVerses] = useState([]);
-  
+  const { language, setLanguage, localized, urls } = useLanguage();
+
+  // ✅ CORRECCIÓN: Definimos la función ANTES de usarla.
   const getInitialQuery = () => {
     try {
       const savedQuery = localStorage.getItem('lastActiveQuery');
@@ -37,12 +38,28 @@ function DiagramApp() {
     }
   };
 
-  const [selectedBookId, setSelectedBookId] = useState(getInitialQuery().bookId);
-  const [selectedChapter, setSelectedChapter] = useState(getInitialQuery().chapter);
-  const [selectedVerse, setSelectedVerse] = useState(getInitialQuery().verse);
-  const [rangeInput, setRangeInput] = useState('');
-  const [activeQuery, setActiveQuery] = useState(getInitialQuery());
+  // ✅ CORRECCIÓN: Llamamos a getInitialQuery UNA SOLA VEZ al inicio.
+  const initialQuery = getInitialQuery();
   
+  const [books, setBooks] = useState([]);
+  const [chapters, setChapters] = useState([]);
+  const [verses, setVerses] = useState([]);
+  
+  // ✅ CORRECCIÓN: Inicializamos los estados de los selectores de forma condicional.
+  // Si la consulta inicial es de tipo 'select', usamos sus valores.
+  // Si es de tipo 'range', usamos un valor por defecto seguro (ej: el primer libro, capítulo 1, etc.)
+  // para evitar que los combos queden en un estado inválido (undefined).
+  const [selectedBookId, setSelectedBookId] = useState(initialQuery.type === 'select' ? initialQuery.bookId : 1);
+  const [selectedChapter, setSelectedChapter] = useState(initialQuery.type === 'select' ? initialQuery.chapter : 1);
+  const [selectedVerse, setSelectedVerse] = useState(initialQuery.type === 'select' ? initialQuery.verse : 1);
+
+  // ✅ CORRECCIÓN: Pre-poblamos el campo de rango si ese fue el último tipo de consulta.
+  const [rangeInput, setRangeInput] = useState(initialQuery.type === 'range' ? initialQuery.range : '');
+															   
+  
+  // ✅ CORRECCIÓN: El estado de la consulta activa se inicializa con el objeto que ya leímos.
+  const [activeQuery, setActiveQuery] = useState(initialQuery);
+ 
   const [verseData, setVerseData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedWord, setSelectedWord] = useState(null);
@@ -58,6 +75,10 @@ function DiagramApp() {
   // ✅ CORRECCIÓN: Se crea una referencia para el componente del diagrama
   const diagramRef = useRef(null);
 
+																					   
+																							   
+
+															 
   useEffect(() => {
     try {
       localStorage.setItem('lastActiveQuery', JSON.stringify(activeQuery));
@@ -69,7 +90,7 @@ function DiagramApp() {
 
   // --- LÓGICA DE CARGA DE DATOS ---
   useEffect(() => {
-    fetch('http://localhost:4000/api/books')
+    fetch(`${urls.apiBase}/books`)
       .then(res => res.json())
       .then(data => setBooks(data))
       .catch(err => console.error("Error al cargar libros:", err));
@@ -77,7 +98,7 @@ function DiagramApp() {
 
   useEffect(() => {
     if (!selectedBookId) return;
-    fetch(`http://localhost:4000/api/chapters/${selectedBookId}`)
+    fetch(`${urls.apiBase}/chapters/${selectedBookId}`)
       .then(res => res.json())
       .then(data => {
         setChapters(Array.from({ length: data.chapter_count || 0 }, (_, i) => i + 1));
@@ -87,7 +108,7 @@ function DiagramApp() {
 
   useEffect(() => {
     if (!selectedBookId || !selectedChapter) return;
-    fetch(`http://localhost:4000/api/verses/${selectedBookId}/${selectedChapter}`)
+    fetch(`${urls.apiBase}/verses/${selectedBookId}/${selectedChapter}`)
       .then(res => res.json())
       .then(data => {
         setVerses(Array.from({ length: data.verse_count || 0 }, (_, i) => i + 1));
@@ -101,22 +122,22 @@ function DiagramApp() {
     setInitialDiagramData(null); 
     let apiUrl = '';
     if (activeQuery.type === 'range') {
-      apiUrl = `http://localhost:4000/api/passage/${encodeURIComponent(activeQuery.range)}`;
+      apiUrl = `${urls.apiBase}/passage/${encodeURIComponent(activeQuery.range)}`;
     } else {
       const book = books.find(b => b.book_id === activeQuery.bookId);
       if (!book) { setLoading(false); return; }
       apiUrl = activeQuery.verse === 'ALL'
-        ? `http://localhost:4000/api/chapter/${book.name}/${activeQuery.chapter}`
-        : `http://localhost:4000/api/verse/${book.name}/${activeQuery.chapter}/${activeQuery.verse}`;
+        ? `${urls.apiBase}/chapter/${book.name}/${activeQuery.chapter}`
+        : `${urls.apiBase}/verse/${book.name}/${activeQuery.chapter}/${activeQuery.verse}`;
     }
 
     fetch(apiUrl)
-      .then(res => res.ok ? res.json() : Promise.reject('Pasaje no encontrado'))
+      .then(res => res.ok ? res.json() : Promise.reject({ noPassageFound: localized.ui.app.noPassageFound }))
       .then(data => {
         const reference = data.reference;
         setVerseData({ reference, verses: data.verses || [{ verse: activeQuery.verse, words: data.words }] });
-        
-        fetch(`http://localhost:4000/api/notes/${encodeURIComponent(reference)}`)
+
+        fetch(`${urls.apiBase}/notes/${encodeURIComponent(reference)}`)
           .then(res => res.json())
           .then(notesData => {
             const savedNotes = notesData.content || '';
@@ -124,7 +145,7 @@ function DiagramApp() {
             if (notesEditorRef.current) notesEditorRef.current.setContent(savedNotes);
           });
 
-        fetch(`http://localhost:4000/api/diagrams/${encodeURIComponent(reference)}`)
+        fetch(`${urls.apiBase}/diagrams/${encodeURIComponent(reference)}`)
           .then(res => res.ok ? res.json() : null)
           .then(diagramData => {
             if (diagramData && diagramData.nodes) {
@@ -142,16 +163,22 @@ function DiagramApp() {
   }, [activeQuery, books]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { 
-      if (activeQuery.type === 'select' && (activeQuery.bookId !== selectedBookId || activeQuery.chapter !== selectedChapter || activeQuery.verse !== selectedVerse)) {
-          setActiveQuery({ type: 'select', bookId: selectedBookId, chapter: selectedChapter, verse: selectedVerse });
-      }
-  }, [selectedBookId, selectedChapter, selectedVerse]);
+
+  // Eliminamos la condición `if` para que SIEMPRE que se cambie un combo, la consulta activa se actualice al modo 'select'.
+  useEffect(() => {
+      setActiveQuery({ 
+        type: 'select', 
+        bookId: selectedBookId, 
+        chapter: selectedChapter, 
+        verse: selectedVerse 
+      });
+      setRangeInput(''); // Limpiamos el input de rango al cambiar selección manualmente.
+  }, [selectedBookId, selectedChapter, selectedVerse, books]); // Añadimos 'books' por si el ID inicial no existe hasta que carguen.
   
   // --- MANEJADORES DE EVENTOS ---
   const handleRangeLoad = () => { if (rangeInput.trim()) setActiveQuery({ type: 'range', range: rangeInput }); };
   const handleNextChapter = () => { const num = parseInt(selectedChapter); if (num < chapters.length) { setSelectedChapter(num + 1); setSelectedVerse(1); } else { handleNextBook(); } };
-  const handlePrevChapter = async () => { const num = parseInt(selectedChapter); if (num > 1) { const prev = num - 1; const res = await fetch(`http://localhost:4000/api/verses/${selectedBookId}/${prev}`); const data = await res.json(); setSelectedChapter(prev); setSelectedVerse(data.verse_count); } else { handlePrevBook(); } };
+  const handlePrevChapter = async () => { const num = parseInt(selectedChapter); if (num > 1) { const prev = num - 1; const res = await fetch(`${urls.apiBase}/verses/${selectedBookId}/${prev}`); const data = await res.json(); setSelectedChapter(prev); setSelectedVerse(data.verse_count); } else { handlePrevBook(); } };
   const handleNextVerse = () => { const num = parseInt(selectedVerse); if (num < verses.length) { setSelectedVerse(num + 1); } else { handleNextChapter(); } };
   const handlePrevVerse = () => { const num = parseInt(selectedVerse); if (num > 1) { setSelectedVerse(num - 1); } else { handlePrevChapter(); } };
   const handleNextBook = () => { const idx = books.findIndex(b => b.book_id === selectedBookId); if (idx < books.length - 1) { setSelectedBookId(books[idx + 1].book_id); setSelectedChapter(1); setSelectedVerse(1); } };
@@ -165,10 +192,10 @@ function DiagramApp() {
 
   const handleSaveDiagram = (diagramElements) => {
     if (!verseData || !verseData.reference) {
-      alert('Por favor, seleccione un pasaje antes de guardar el diagrama.');
+      alert(localized.ui.app.selectPassageFirstDiagram);
       return;
     }
-    fetch('http://localhost:4000/api/diagrams', {
+    fetch(`${urls.apiBase}/diagrams`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -177,27 +204,27 @@ function DiagramApp() {
         edges: [],
       }),
     })
-    .then(res => res.ok ? alert('Diagrama guardado correctamente.') : alert('Error al guardar el diagrama.'))
+    .then(res => res.ok ? alert(localized.ui.app.diagramSaveSuccess) : alert(localized.ui.app.diagramSaveError))
     .catch(err => {
       console.error('Error al guardar el diagrama:', err);
-      alert('Error de conexión al guardar el diagrama.');
+      alert(localized.ui.app.diagramConnectionError);
     });
   };
 
   const handleSaveNotes = () => {
     if (!verseData || !verseData.reference) {
-      alert('Por favor, seleccione un pasaje antes de guardar notas.');
+      alert(localized.ui.app.selectPassageFirstNotes);
       return;
     }
-    fetch('http://localhost:4000/api/notes', {
+    fetch(`${urls.apiBase}/notes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reference: verseData.reference, content: notesContent }),
     })
-    .then(res => res.ok ? alert('Notas guardadas correctamente.') : alert('Error al guardar las notas.'))
+    .then(res => res.ok ? alert(localized.ui.app.notesSaveSuccess) : alert(localized.ui.app.notesSaveError))
     .catch(err => {
         console.error('Error al guardar notas:', err);
-        alert('Error de conexión al guardar las notas.');
+        alert(localized.ui.app.notesConnectionError);
     });
   };
 
@@ -219,20 +246,36 @@ function DiagramApp() {
   // --- RENDERIZADO DEL COMPONENTE ---
   return (
     <div className="app-container">
-      <h1>Proyecto Exegética Bíblica</h1>
+      {/* ✅ NUEVO: Cabecera con el título y el selector de idioma. */}
+      <div className="app-header">
+        <h1>{localized.ui.app.title}</h1>
+        <div className="language-selector-wrapper">
+          <label htmlFor="language-select">{localized.ui.app.languageLabel} </label>
+          <select 
+            id="language-select" 
+            value={language} 
+            onChange={(e) => setLanguage(e.target.value)}
+          >
+            <option value="es">Español</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+      
+      {/* Pasamos el prop 'language' a los componentes que lo necesitarán */}
       <PassageSelector {...{books, chapters, verses, selectedBookId, setSelectedBookId, selectedChapter, setSelectedChapter, selectedVerse, setSelectedVerse, rangeInput, setRangeInput, handleRangeLoad}} />
-      {/* ✅ CORRECCIÓN: Se pasa la nueva función al navegador */}
-      <PassageNavigator onAddPassage={handleLoadPassageIntoDiagram} onPrevBook={handlePrevBook} onPrevVerse={handlePrevVerse} onNextVerse={handleNextVerse} onNextBook={handleNextBook} onPrint={() => handlePrintAndExport('print')} onExportPdf={() => handlePrintAndExport('pdf')} />
+      <PassageNavigator onAddPassage={handleLoadPassageIntoDiagram} onPrevBook={handlePrevBook} onPrevVerse={handlePrevVerse} onNextVerse={handleNextVerse} onNextBook={handleNextBook} />
       <Legend />
+
       <div className="tabs-container">
         <div className="tab-buttons">
-            <button onClick={() => setActiveTab('text')} className={activeTab === 'text' ? 'active' : ''}>Pasaje</button>
-            <button onClick={() => setActiveTab('diagram')} className={activeTab === 'diagram' ? 'active' : ''}>Diagrama</button>
+            <button onClick={() => setActiveTab('text')} className={activeTab === 'text' ? 'active' : ''}>{localized.ui.app.tabPassage}</button>
+            <button onClick={() => setActiveTab('diagram')} className={activeTab === 'diagram' ? 'active' : ''}>{localized.ui.app.tabDiagram}</button>
         </div>
         <div className="tab-content">
           <div id="text-viewer-printable-area" ref={textViewerRef} className="printable-content" style={{ display: activeTab === 'text' ? 'block' : 'none' }}>
             <div className="text-viewer-container">
-              {loading ? <p>Cargando...</p> : <TextViewer verseData={verseData} onWordClick={setSelectedWord} onWordDragStart={onWordDragStart} onWordDoubleClick={handleWordDoubleClick} />}
+              {loading ? <p>{localized.ui.app.loading}</p> : <TextViewer verseData={verseData} onWordClick={setSelectedWord} onWordDragStart={onWordDragStart} onWordDoubleClick={handleWordDoubleClick} />}
             </div> 
           </div>
 
@@ -243,7 +286,7 @@ function DiagramApp() {
               initialElements={initialDiagramData}
               passageWords={verseData ? verseData.verses.flatMap(v => v.words) : []}
               onSaveDiagram={handleSaveDiagram}
-              reference={verseData ? verseData.reference : 'Ningún pasaje cargado'}
+              reference={verseData ? verseData.reference : localized.ui.app.noPassageLoaded}
             />
           </div>
 
@@ -265,6 +308,8 @@ function DiagramApp() {
 
 export default function App() {
   return (
+    <LanguageProvider>
       <DiagramApp />
+    </LanguageProvider>
   );
 }

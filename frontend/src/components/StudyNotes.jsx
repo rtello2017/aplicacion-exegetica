@@ -2,6 +2,8 @@ import React, { forwardRef, useImperativeHandle, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 
+import { useLanguage } from '../context/LanguageContext';
+
 // Barra de herramientas para el editor Tiptap
 const MenuBar = ({ editor }) => {
   if (!editor) {
@@ -22,7 +24,10 @@ const MenuBar = ({ editor }) => {
 };
 
 // Componente principal de Notas de Estudio, ahora con Tiptap
-const StudyNotes = forwardRef(({ initialContent, onUpdate, onSave, reference }, ref) => {
+const StudyNotes = forwardRef(({ initialContent, onUpdate, onSave, reference, language }, ref) => {
+  
+  const { localized } = useLanguage();    
+  
   const editor = useEditor({
     extensions: [StarterKit],
     content: initialContent,
@@ -57,11 +62,16 @@ const StudyNotes = forwardRef(({ initialContent, onUpdate, onSave, reference }, 
     e.preventDefault();
   };
 
+  // ✅ Construir el texto del título dinámicamente.
+  const titleText = reference
+    ? localized.ui.studyNotes.title.replace('{reference}', reference)
+    : localized.ui.studyNotes.noPassage;
+
   return (
     <div className="study-notes-panel">
       <div className="notes-header">
-        <h3>Notas de Estudio para: {reference || 'Ningún pasaje seleccionado'}</h3>
-        <button onClick={onSave} className="save-notes-button">Guardar Notas</button>
+        <h3>{titleText}</h3>
+        <button onClick={onSave} className="save-notes-button">{localized.ui.studyNotes.saveButton}</button>
       </div>
       <div className="tiptap-editor-wrapper" onDrop={handleDrop} onDragOver={handleDragOver}>
         <MenuBar editor={editor} />

@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect, useCallback, forwardRef, useImperat
 import { Stage, Layer, Line, Text, Transformer, Group, Path, Rect, Ellipse, Arrow } from 'react-konva';
 import { v4 as uuidv4 } from 'uuid';
 import { jsPDF } from "jspdf";
+import { useLanguage } from '../context/LanguageContext';
 
 // --- Iconos para la UI (SVG para conectores Kellogg) ---
-const ICONS = {
+const ICON_PATHS = {
     baseline: { path: <svg viewBox="0 0 100 100"><line x1="5" y1="50" x2="95" y2="50" stroke="black" strokeWidth="8" /></svg>, label: "Línea Base" },
     modifier: { path: <svg viewBox="0 0 100 100"><line x1="10" y1="90" x2="90" y2="10" stroke="black" strokeWidth="8" /></svg>, label: "Modificador" },
     modifierInverse: { path: <svg viewBox="0 0 100 100"><line x1="10" y1="10" x2="90" y2="90" stroke="black" strokeWidth="8" /></svg>, label: "Mod. Inverso" },
@@ -82,6 +83,17 @@ const Shape = ({ element, onSelect, onDragStart, onDragMove, onDragEnd, onDblCli
 
 // --- Componente Principal del Diagramador ---
 const SyntaxDiagram = forwardRef(({ initialElements, passageWords = [], onSaveDiagram, reference }, ref) => {
+    
+    const { localized } = useLanguage();    
+
+    const ICONS = Object.keys(ICON_PATHS).reduce((acc, key) => {
+        acc[key] = {
+            path: ICON_PATHS[key].path,
+            label: localized.ui.syntaxDiagram.toolLabels[key] || key
+        };
+        return acc;
+    }, {});
+
     const [elements, setElements] =useState([]);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [stage, setStage] = useState({ x: 0, y: 0, scale: 1 });
@@ -112,7 +124,7 @@ const SyntaxDiagram = forwardRef(({ initialElements, passageWords = [], onSaveDi
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (editingText) {
-                if(e.key === 'Escape') setEditingText(null);
+                if(e.key === 'Escape') handleTextEdit();
                 return;
             }
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
@@ -205,7 +217,7 @@ const SyntaxDiagram = forwardRef(({ initialElements, passageWords = [], onSaveDi
             baseWidth: itemData.type !== 'word' ? (baseDimensions[itemData.type]?.w || 100) : undefined,
             baseHeight: itemData.type !== 'word' ? (baseDimensions[itemData.type]?.h || 50) : undefined,
             rotation: 0, ...itemData, parentId: parent ? parent.id : null,
-            text: itemData.type === 'customText' ? 'Doble clic para editar' : itemData.text,
+            text: itemData.type === 'customText' ? localized.ui.syntaxDiagram.customTextDefault : itemData.text,
         };
         if (parent) {
             const parentNode = stageRef.current.findOne('#' + parent.id);
@@ -239,7 +251,11 @@ const SyntaxDiagram = forwardRef(({ initialElements, passageWords = [], onSaveDi
     };
 
     const handleImport = () => {
-        if (!passageWords || passageWords.length === 0) { alert("No hay palabras en el pasaje actual para importar."); return; }
+        if (!passageWords || passageWords.length === 0) { 
+            alert(localized.ui.syntaxDiagram.importAlert); 
+            return; 
+        }
+
         const newTextElements = passageWords.map((word, index) => {
             const morphText = [word.pos, (word.morph || word.parsing)].filter(Boolean).join(' - ');
             return {
@@ -360,30 +376,33 @@ const SyntaxDiagram = forwardRef(({ initialElements, passageWords = [], onSaveDi
         const textNode = e.target.getParent();
         const element = elements.find(el => el.id === textNode.id());
         if (element.type !== 'customText') return;
+
+        trRef.current.nodes([]);
+        textNode.hide();
         
         setEditingText(element);
-        const textPosition = textNode.absolutePosition();
-        const stageBox = stageRef.current.container().getBoundingClientRect();
+        const textPosition = textNode.getClientRect({relativeTo: containerRef.current.parentElement});
         
-        const areaPosition = {
-            x: stageBox.left + textPosition.x,
-            y: stageBox.top + textPosition.y,
-        };
-
         const textarea = textEditRef.current;
         textarea.value = element.text;
         textarea.style.display = 'block';
         textarea.style.position = 'absolute';
-        textarea.style.top = areaPosition.y + 'px';
-        textarea.style.left = areaPosition.x + 'px';
-        textarea.style.width = textNode.width() * stage.scale + 'px';
-        textarea.style.height = textNode.height() * stage.scale + 'px';
+        textarea.style.top = textPosition.y + 'px';
+        textarea.style.left = textPosition.x + 'px';
+        textarea.style.width = textPosition.width + 'px';
+        textarea.style.height = textPosition.height + 'px';
         textarea.style.fontSize = (element.fontSize || 22) * stage.scale + 'px';
+        textarea.style.lineHeight = '1.2';
+        textarea.style.fontFamily = '"Cardo", serif';
         textarea.focus();
     };
 
     const handleTextEdit = () => {
         if (!editingText) return;
+
+        const node = stageRef.current.findOne('#' + editingText.id);
+        if (node) node.show();
+
         const newElements = elements.map(el => {
             if (el.id === editingText.id) {
                 return { ...el, text: textEditRef.current.value };
@@ -407,7 +426,7 @@ const SyntaxDiagram = forwardRef(({ initialElements, passageWords = [], onSaveDi
             id: uuidv4(),
             x: el.x + 20,
             y: el.y + 20,
-            parentId: null, // Pasted elements are not parented initially
+            parentId: null,
         }));
         setElements(prev => [...prev, ...newElements]);
         setSelectedIds(new Set(newElements.map(el => el.id)));
@@ -441,10 +460,11 @@ const SyntaxDiagram = forwardRef(({ initialElements, passageWords = [], onSaveDi
             <style>{`@import url('https://fonts.googleapis.com/css2?family=Cardo:wght@400;700&display=swap');`}</style>
             
             <div style={{ width: '200px', flexShrink: 0, padding: '10px', borderRight: '1px solid #ccc', backgroundColor: 'white', overflowY: 'auto', display: isFullScreen ? 'none' : 'block' }}>
-                <h3 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '10px' }}>Conectores</h3>
+                <h3 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '10px' }}>{localized.ui.syntaxDiagram.panelConnectorsTitle}</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     {Object.entries(ICONS).map(([type, { path, label }]) => (
                         <div key={type} draggable onDragStart={() => dragItemRef.current = { type }} title={label} style={{ cursor: 'grab', textAlign: 'center', padding: '5px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fafafa' }}>
+                            {/* <div style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: '35px', height: '35px' }}>{path}</div></div> */}
                             <div style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: '35px', height: '35px' }}>{path}</div></div>
                             <div style={{ fontSize: '11px' }}>{label}</div>
                         </div>
@@ -465,13 +485,13 @@ const SyntaxDiagram = forwardRef(({ initialElements, passageWords = [], onSaveDi
                 )}
                 
                 <div style={{ padding: '10px', borderBottom: '1px solid #ccc', backgroundColor: 'white', display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <button onClick={handleImport}>Importar Texto</button>
-                    <button onClick={handleSave}>Guardar Diagrama</button>
-                    <button onClick={handleClear}>Limpiar Lienzo</button>
-                    <button onClick={() => handleExport('png')}>Exportar PNG</button>
-                    <button onClick={() => handleExport('pdf')}>Exportar PDF</button>
-                    <button onClick={handleFitToScreen} title="Ajustar al lienzo">⛶</button>
-                    <button onClick={() => setIsFullScreen(!isFullScreen)} title="Pantalla Completa">⛗</button>
+                    <button onClick={handleImport}>{localized.ui.syntaxDiagram.importButton}</button>
+                    <button onClick={handleSave}>{localized.ui.syntaxDiagram.saveButton}</button>
+                    <button onClick={handleClear}>{localized.ui.syntaxDiagram.clearButton}</button>
+                    <button onClick={() => handleExport('png')}>{localized.ui.syntaxDiagram.exportPng}</button>
+                    <button onClick={() => handleExport('pdf')}>{localized.ui.syntaxDiagram.exportPdf}</button>
+                    <button onClick={handleFitToScreen} title={localized.ui.syntaxDiagram.fitScreen}>⛶</button>
+                    <button onClick={() => setIsFullScreen(!isFullScreen)} title={localized.ui.syntaxDiagram.fullscreen}>⛗</button>
                     <span style={{marginLeft: 'auto', color: '#555', fontSize: '14px'}}>{reference}</span>
                 </div>
                 <div style={{ flex: 1, position: 'relative', backgroundColor: '#fff', cursor: 'grab' }} onDrop={handleDrop} onDragOver={(e) => { e.preventDefault(); handleDragMove(e); }}>
@@ -491,13 +511,13 @@ const SyntaxDiagram = forwardRef(({ initialElements, passageWords = [], onSaveDi
                             />
                         </Layer>
                     </Stage>
-                    <textarea ref={textEditRef} onBlur={handleTextEdit} style={{display: 'none', position: 'absolute', zIndex: 10, border: '1px solid #ccc', margin: 0, padding: 0, background: 'white', resize: 'none', fontFamily: 'Cardo, serif'}} />
+                    <textarea ref={textEditRef} onBlur={handleTextEdit} style={{display: 'none', position: 'absolute', zIndex: 10, border: 'none', padding: '0px', margin: '0px', overflow: 'hidden', background: 'none', outline: 'none', resize: 'none', fontFamily: 'Cardo, serif'}} />
                 </div>
             </div>
 
             <div style={{ width: isWordsPanelCollapsed ? '20px' : '200px', flexShrink: 0, padding: isWordsPanelCollapsed ? '10px 0' : '10px', borderLeft: '1px solid #ccc', backgroundColor: 'white', overflowY: 'auto', transition: 'width 0.3s ease', display: isFullScreen ? 'none' : 'block' }}>
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                    {!isWordsPanelCollapsed && <h3 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '10px', flexGrow: 1 }}>Palabras del Pasaje</h3>}
+                    {!isWordsPanelCollapsed && <h3 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '10px', flexGrow: 1 }}>{localized.ui.syntaxDiagram.panelWordsTitle}</h3>}
                     <button onClick={() => setIsWordsPanelCollapsed(!isWordsPanelCollapsed)} style={{border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '20px', padding: '0 5px', lineHeight: 1}}>{isWordsPanelCollapsed ? '«' : '»'}</button>
                 </div>
                 {!isWordsPanelCollapsed && passageWords.map(word => {

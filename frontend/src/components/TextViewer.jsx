@@ -2,12 +2,21 @@ import React from 'react';
 // MODIFICACIÓN: Importamos las funciones desde el archivo de utilidades
 import { getFullPosName, parseDetailedMorphology } from '../utils/morphologyParser';
 
+import { useLanguage } from '../context/LanguageContext';
+
 // --- Componente para una sola palabra ---
 function Word({ wordData, onWordClick, onWordDragStart, onWordDoubleClick }) {
+  
+  // ✅ Obtener el paquete de textos para el idioma actual.
+  const { localized, urls } = useLanguage();
+
   // Lógica de Strongs
   const hasStrongs = wordData.strongs != null;
-  const formattedStrongs = hasStrongs ? `G${wordData.strongs}` : null;
-  const strongsUrl = hasStrongs ? `https://biblehub.com/greek/${wordData.strongs}.htm` : null;
+  //const formattedStrongs = hasStrongs ? `G${wordData.strongs}` : null;
+  //const strongsUrl = hasStrongs ? `https://biblehub.com/greek/${wordData.strongs}.htm` : null;
+  const strongsUrl = hasStrongs 
+    ? urls.strongs.replace('{strongs}', wordData.strongs)
+    : null;
 
   // Lógica de visualización para el interlineal
   const formattedPos = wordData.pos ? wordData.pos.replace(/-/g, ' ') : '';
@@ -27,7 +36,7 @@ function Word({ wordData, onWordClick, onWordDragStart, onWordDoubleClick }) {
       {/* Línea 1: Número Strong */}
       {hasStrongs ? (
         <a href={strongsUrl} target="_blank" rel="noopener noreferrer">
-          {formattedStrongs}
+          {`G${wordData.strongs}`}
         </a>
       ) : (
         <span>&nbsp;</span>
@@ -52,9 +61,9 @@ function Word({ wordData, onWordClick, onWordDragStart, onWordDoubleClick }) {
 
       {/* MODIFICACIÓN: El nuevo tooltip */}
       <div className="word-tooltip">
-        <p><strong>Raíz:</strong> {wordData.lemma || 'N/A'}</p>
-        <p><strong>Categoría:</strong> {tooltipPosInfo.name}</p>
-        <p><strong>Análisis:</strong> {tooltipParsingInfo.description}</p>
+        <p><strong>{localized.ui.textViewer.tooltipRoot}</strong> {wordData.lemma || 'N/A'}</p>
+        <p><strong>{localized.ui.textViewer.tooltipCategory}</strong> {tooltipPosInfo.name}</p>
+        <p><strong>{localized.ui.textViewer.tooltipAnalysis}</strong> {tooltipParsingInfo.description}</p>
       </div>
     </div>
   );
@@ -62,9 +71,12 @@ function Word({ wordData, onWordClick, onWordDragStart, onWordDoubleClick }) {
 
 
 // --- Componente principal del Visor de Texto ---
-function TextViewer({ verseData, onWordClick, onWordDragStart, onWordDoubleClick }) {
+function TextViewer({ verseData, onWordClick, onWordDragStart, onWordDoubleClick, language }) {
+  
+  const { localized } = useLanguage();
+  
   if (!verseData || !verseData.verses) {
-    return <p>Seleccione un pasaje para comenzar.</p>;
+    return <p>{localized.ui.textViewer.noPassage}</p>;
   }
 
   return (
@@ -81,6 +93,7 @@ function TextViewer({ verseData, onWordClick, onWordDragStart, onWordDoubleClick
                 onWordClick={onWordClick}
                 onWordDragStart={onWordDragStart}
                 onWordDoubleClick={onWordDoubleClick}
+                language={language}
               />
             ))}
           </div>
