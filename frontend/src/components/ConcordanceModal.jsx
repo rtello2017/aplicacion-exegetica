@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 
 function ConcordanceModal({ wordData, onClose }) {
 
-  const { localized } = useLanguage();  
+  const { localized, urls } = useLanguage();  
 
   const [concordance, setConcordance] = useState({ lemmaOccurrences: [], textOccurrences: [] });
   const [isLoading, setIsLoading] = useState(true);
