@@ -297,7 +297,7 @@ app.get('/api/passage/:range', async (req, res) => {
   const correctBookName = bookResult.rows[0].name;
   try {
     const query = `
-      SELECT w.word_id, w.verse, w.text, w.lemma, w.pos, w.parsing, w.strongs, sl.gloss, ut.user_translation
+      SELECT w.word_id, w.verse, w.text, w.lemma, w.pos, w.parsing, w.strongs, sl.gloss, sl.transliteration, sl.definition, ut.user_translation
       FROM words w
       JOIN books b ON w.book_id = b.book_id
       LEFT JOIN strongs_lexicon sl ON w.strongs = sl.strongs_id
@@ -308,7 +308,18 @@ app.get('/api/passage/:range', async (req, res) => {
     const result = await pool.query(query, [correctBookName, chapter, startVerse, endVerse]);
     const verses = result.rows.reduce((acc, row) => {
       if (!acc[row.verse]) { acc[row.verse] = { verse: row.verse, words: [] }; }
-      acc[row.verse].words.push({ id: row.word_id, text: row.text, lemma: row.lemma, pos: row.pos, parsing: row.parsing, strongs: row.strongs, gloss: row.gloss, user_translation: row.user_translation });
+      acc[row.verse].words.push({ 
+        id: row.word_id, 
+        text: row.text, 
+        lemma: row.lemma, 
+        pos: row.pos, 
+        parsing: row.parsing, 
+        strongs: row.strongs, 
+        gloss: row.gloss,
+        transliteration: row.transliteration,
+        definition: row.definition,
+        user_translation: row.user_translation
+      });
       return acc;
     }, {});
     const responseData = {
