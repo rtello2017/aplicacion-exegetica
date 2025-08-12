@@ -103,9 +103,10 @@ function AnalysisPopup({ wordData, onClose, onSave }) {
 
           <div className="popup-section">
             <div className="form-grid">
-                <p><strong>{localized.ui.analysisPopup.transliterationLabel}:</strong> {wordData.transliteration} </p>
-                <p><strong>{localized.ui.analysisPopup.shortGlossLabel}:</strong> {wordData.gloss}</p>
-                <p><strong>{localized.ui.analysisPopup.definitionLabel}:</strong> {wordData.definition}</p>
+                <p><strong>{localized.ui.analysisPopup.rootLabel}</strong> {wordData.lemma} </p>
+                <p><strong>{localized.ui.analysisPopup.transliterationLabel}</strong> {wordData.transliteration} </p>
+                <p><strong>{localized.ui.analysisPopup.glossLabel}</strong> {wordData.gloss}</p>
+                <p><strong>{localized.ui.analysisPopup.definitionLabel}</strong> {wordData.definition}</p>
             </div>
           </div>
 
