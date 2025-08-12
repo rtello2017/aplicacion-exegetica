@@ -36,6 +36,9 @@ function AnalysisPopup({ wordData, onClose, onSave }) {
   }, [wordData, urls.apiBase]);
 
   const handleSave = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
     const promises = [];
     promises.push(fetch(`${urls.apiBase}/word/${wordData.id}`, {
       method: 'PATCH',
@@ -44,7 +47,7 @@ function AnalysisPopup({ wordData, onClose, onSave }) {
     }));
     promises.push(fetch(`${urls.apiBase}/translation/${wordData.id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ user_translation: userTranslation }),
     }));
     

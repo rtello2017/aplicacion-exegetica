@@ -138,7 +138,23 @@ const localizations = {
                 selectPassageFirstNotes: 'Por favor, seleccione un pasaje antes de guardar notas.',
                 notesSaveSuccess: 'Notas guardadas correctamente.',
                 notesSaveError: 'Error al guardar las notas.',
-                notesConnectionError: 'Error de conexión al guardar las notas.'
+                notesConnectionError: 'Error de conexión al guardar las notas.',
+                noTokenFound: 'Tu sesión ha expirado. Por favor, inicia sesión de nuevo',
+                closeSession: 'Cerrar Sesión'
+            },
+            loginPage: {
+                title: 'Iniciar Sesión',
+                registerTitle: 'Crear Cuenta',
+                usernameLabel: 'Usuario',
+                passwordLabel: 'Contraseña',
+                submitButton: 'Ingresar',
+                registerButton: 'Registrarse',
+                toggleToRegister: '¿No tienes una cuenta?',
+                toggleToLogin: '¿Ya tienes una cuenta?',
+                registerLink: 'Regístrate',
+                loginLink: 'Inicia sesión',
+                registerSuccess: '¡Registro exitoso! Por favor, inicia sesión.',
+                genericError: 'Ocurrió un error.'
             }
         },
         componentData: {
@@ -279,7 +295,23 @@ const localizations = {
                 selectPassageFirstNotes: 'Please select a passage before saving notes.',
                 notesSaveSuccess: 'Notes saved successfully.',
                 notesSaveError: 'Error saving the notes.',
-                notesConnectionError: 'Connection error while saving the notes.'
+                notesConnectionError: 'Connection error while saving the notes.',
+                noTokenFound: 'Your session has expired. Please log in again.',
+                closeSession: 'Log Out'
+            },
+            loginPage: {
+                title: 'Login',
+                registerTitle: 'Create Account',
+                usernameLabel: 'Username',
+                passwordLabel: 'Password',
+                submitButton: 'Login',
+                registerButton: 'Register',
+                toggleToRegister: "Don't have an account?",
+                toggleToLogin: 'Already have an account?',
+                registerLink: 'Sign up',
+                loginLink: 'Log in',
+                registerSuccess: 'Registration successful! Please log in.',
+                genericError: 'An error occurred.'
             }
         },
         componentData: {

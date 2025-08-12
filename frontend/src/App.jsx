@@ -22,10 +22,28 @@ import SyntaxDiagram from './components/SyntaxDiagram';
 
 // Importamos el nuevo LanguageProvider
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import LoginPage from './components/LoginPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+
+const LogoutIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+    <polyline points="16 17 21 12 16 7"></polyline>
+    <line x1="21" y1="12" x2="9" y2="12"></line>
+  </svg>
+);
 
 function DiagramApp() {
   // --- ESTADO GENERAL DE LA APLICACIÓN ---
   const { language, setLanguage, localized, urls } = useLanguage();
+
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token'); // 1. Elimina el token del almacenamiento
+    navigate('/login');               // 2. Redirige al usuario a la página de login
+  };
 
   // ✅ CORRECCIÓN: Definimos la función ANTES de usarla.
   const getInitialQuery = () => {
@@ -56,7 +74,6 @@ function DiagramApp() {
   // ✅ CORRECCIÓN: Pre-poblamos el campo de rango si ese fue el último tipo de consulta.
   const [rangeInput, setRangeInput] = useState(initialQuery.type === 'range' ? initialQuery.range : '');
 															   
-  
   // ✅ CORRECCIÓN: El estado de la consulta activa se inicializa con el objeto que ya leímos.
   const [activeQuery, setActiveQuery] = useState(initialQuery);
  
@@ -75,10 +92,6 @@ function DiagramApp() {
   // ✅ CORRECCIÓN: Se crea una referencia para el componente del diagrama
   const diagramRef = useRef(null);
 
-																					   
-																							   
-
-															 
   useEffect(() => {
     try {
       localStorage.setItem('lastActiveQuery', JSON.stringify(activeQuery));
@@ -118,6 +131,19 @@ function DiagramApp() {
 
   const fetchData = useCallback(() => {
     if (!activeQuery || books.length === 0) return;
+    const token = localStorage.getItem('token');
+
+    // Si por alguna razón no hay token, no intentes buscar datos protegidos.
+    if (!token) {
+        setLoading(false);
+        return;
+    }
+
+    // ✅ 2. Prepara la cabecera de autorización para reutilizarla.
+    const authHeaders = {
+        'Authorization': `Bearer ${token}`
+    };
+
     setLoading(true);
     setInitialDiagramData(null); 
     let apiUrl = '';
@@ -137,7 +163,8 @@ function DiagramApp() {
         const reference = data.reference;
         setVerseData({ reference, verses: data.verses || [{ verse: activeQuery.verse, words: data.words }] });
 
-        fetch(`${urls.apiBase}/notes/${encodeURIComponent(reference)}`)
+        // Petición para obtener las notas, ahora con la cabecera de autorización.
+        fetch(`${urls.apiBase}/notes/${encodeURIComponent(reference)}`, { headers: authHeaders })
           .then(res => res.json())
           .then(notesData => {
             const savedNotes = notesData.content || '';
@@ -145,7 +172,8 @@ function DiagramApp() {
             if (notesEditorRef.current) notesEditorRef.current.setContent(savedNotes);
           });
 
-        fetch(`${urls.apiBase}/diagrams/${encodeURIComponent(reference)}`)
+        // Petición para obtener el diagrama, también con la cabecera.
+        fetch(`${urls.apiBase}/diagrams/${encodeURIComponent(reference)}`, { headers: authHeaders })
           .then(res => res.ok ? res.json() : null)
           .then(diagramData => {
             if (diagramData && diagramData.nodes) {
@@ -160,7 +188,7 @@ function DiagramApp() {
         setVerseData(null);
       })
       .finally(() => setLoading(false));
-  }, [activeQuery, books]);
+  }, [activeQuery, books, urls.apiBase]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -191,13 +219,20 @@ function DiagramApp() {
   };
 
   const handleSaveDiagram = (diagramElements) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert(localized.ui.app.noTokenFound);
+        navigate('/login'); // ✅ Redirige al usuario a la ruta de login.
+        return;
+    }
+
     if (!verseData || !verseData.reference) {
       alert(localized.ui.app.selectPassageFirstDiagram);
       return;
     }
     fetch(`${urls.apiBase}/diagrams`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
         reference: verseData.reference,
         nodes: diagramElements,
@@ -212,13 +247,23 @@ function DiagramApp() {
   };
 
   const handleSaveNotes = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert(localized.ui.app.noTokenFound);
+        navigate('/login'); // ✅ Redirige al usuario a la ruta de login.
+        return;
+    }
+
     if (!verseData || !verseData.reference) {
       alert(localized.ui.app.selectPassageFirstNotes);
       return;
     }
     fetch(`${urls.apiBase}/notes`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ reference: verseData.reference, content: notesContent }),
     })
     .then(res => res.ok ? alert(localized.ui.app.notesSaveSuccess) : alert(localized.ui.app.notesSaveError))
@@ -249,6 +294,7 @@ function DiagramApp() {
       {/* ✅ NUEVO: Cabecera con el título y el selector de idioma. */}
       <div className="app-header">
         <h1>{localized.ui.app.title}</h1>
+        <div className="header-controls"> {/* ✅ NUEVO: Contenedor para los controles */}
         <div className="language-selector-wrapper">
           <label htmlFor="language-select">{localized.ui.app.languageLabel} </label>
           <select 
@@ -259,6 +305,11 @@ function DiagramApp() {
             <option value="es">Español</option>
             <option value="en">English</option>
           </select>
+        </div>
+          {/* ✅ NUEVO: Botón de Logout */}
+          <button onClick={handleLogout} className="logout-button" title={localized.ui.app.closeSession}>
+            <LogoutIcon />
+          </button>
         </div>
       </div>
       
@@ -308,8 +359,27 @@ function DiagramApp() {
 
 export default function App() {
   return (
+    // El LanguageProvider envuelve todo para que el contexto esté disponible en todas las páginas
     <LanguageProvider>
-      <DiagramApp />
+      {/* BrowserRouter activa el sistema de rutas */}
+      <BrowserRouter>
+        {/* Routes define el conjunto de rutas posibles */}
+        <Routes>
+          {/* Ruta para la página de login */}
+          <Route path="/login" element={<LoginPage />} />
+          
+          {/* Ruta principal, protegida */}
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                {/* DiagramApp solo se renderiza si el usuario está autenticado */}
+                <DiagramApp />
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
+      </BrowserRouter>
     </LanguageProvider>
   );
 }

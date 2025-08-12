@@ -374,3 +374,26 @@ h1 {
   border: 1px solid #ccc;
   background-color: white;
 }
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* Espacio entre el selector de idioma y el botón de logout */
+}
+
+.logout-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  border-radius: 50%;
+}
+
+.logout-button:hover {
+  background-color: #f0f0f0;
+  color: #000;
+}
