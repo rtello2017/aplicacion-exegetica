@@ -3,6 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -26,6 +29,70 @@ app.get('/api/db-test', async (req, res) => {
     res.status(500).json({ message: 'Error en la conexión a la base de datos ❌' });
   }
 });
+
+// RUTA DE REGISTRO DE NUEVO USUARIO
+app.post('/api/auth/register', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ message: 'Usuario y contraseña son requeridos.' });
+    }
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+        
+        const newUserQuery = `
+            INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username;
+        `;
+        const result = await pool.query(newUserQuery, [username, passwordHash]);
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        // Manejar error de usuario duplicado (código 23505 en PostgreSQL)
+        if (err.code === '23505') {
+            return res.status(409).json({ message: 'El nombre de usuario ya existe.' });
+        }
+        console.error('Error al registrar usuario:', err);
+        res.status(500).json({ message: 'Error en el servidor.' });
+    }
+});
+
+// RUTA DE LOGIN
+app.post('/api/auth/login', async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        if (result.rows.length === 0) {
+            return res.status(401).json({ message: 'Credenciales inválidas.' }); // Usuario no encontrado
+        }
+        const user = result.rows[0];
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        if (!isValidPassword) {
+            return res.status(401).json({ message: 'Credenciales inválidas.' }); // Contraseña incorrecta
+        }
+        // Crear el token
+        const token = jwt.sign(
+            { userId: user.id, username: user.username },
+            process.env.JWT_SECRET, // ¡Crea esta variable en tu archivo .env!
+            { expiresIn: '24h' }
+        );
+        res.json({ token, username: user.username });
+    } catch (err) {
+        console.error('Error en el login:', err);
+        res.status(500).json({ message: 'Error en el servidor.' });
+    }
+});
+
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Formato: "Bearer TOKEN"
+
+    if (token == null) return res.sendStatus(401); // No hay token
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403); // Token inválido o expirado
+        req.user = user; // Guardamos los datos del usuario en el objeto de la petición
+        next(); // Continuar a la ruta protegida
+    });
+}
 
 // RUTA PARA OBTENER UN SOLO VERSÍCULO
 app.get('/api/verse/:bookName/:chapter/:verse', async (req, res) => {
@@ -130,17 +197,20 @@ app.patch('/api/word/:wordId', async (req, res) => {
     }
 });
 
-app.patch('/api/translation/:wordId', async (req, res) => {
+app.patch('/api/translation/:wordId', authenticateToken, async (req, res) => {
+    
     const { wordId } = req.params;
     const { user_translation } = req.body;
+    const userId = req.user.userId; // Obtenemos el ID del token
+
     try {
         const query = `
-            INSERT INTO user_translations (word_id, user_translation)
-            VALUES ($1, $2)
-            ON CONFLICT (word_id) 
+            INSERT INTO user_translations (word_id, user_translation, user_id)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (word_id, user_id) 
             DO UPDATE SET user_translation = $2;
         `;
-        await pool.query(query, [wordId, user_translation]);
+        await pool.query(query, [wordId, user_translation, userId]);
         res.json({ message: 'Traducción guardada.' });
     } catch (err) {
         console.error('Error al guardar la traducción:', err);
@@ -253,10 +323,12 @@ app.get('/api/passage/:range', async (req, res) => {
 });
 
 // --- ENDPOINTS PARA NOTAS DE ESTUDIO ---
-app.get('/api/notes/:reference', async (req, res) => {
+app.get('/api/notes/:reference', authenticateToken, async (req, res) => {
   const { reference } = req.params;
+  const userId = req.user.userId; // Obtenemos el ID del token
+
   try {
-    const result = await pool.query('SELECT content FROM study_notes WHERE reference = $1', [reference]);
+    const result = await pool.query('SELECT content FROM study_notes WHERE reference = $1 AND user_id = $2', [reference, userId]);
     if (result.rows.length > 0) {
       res.json(result.rows[0]);
     } else {
@@ -268,32 +340,36 @@ app.get('/api/notes/:reference', async (req, res) => {
   }
 });
 
-app.post('/api/notes', async (req, res) => {
+app.post('/api/notes', authenticateToken, async (req, res) => {
+  const userId = req.user.userId; // Obtenemos el ID del token
   const { reference, content } = req.body;
+
   if (!reference || content === undefined) {
     return res.status(400).send('La referencia y el contenido son requeridos.');
   }
   try {
     const query = `
-      INSERT INTO study_notes (reference, content, updated_at)
-      VALUES ($1, $2, NOW())
-      ON CONFLICT (reference)
+      INSERT INTO study_notes (reference, content, user_id, updated_at)
+      VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (reference, user_id)
       DO UPDATE SET content = $2, updated_at = NOW();
     `;
-    await pool.query(query, [reference, content]);
+    await pool.query(query, [reference, content, userId]);
     res.status(200).send('Notas guardadas correctamente.');
-  } catch (err)
-    {
+  } catch (err) {
     console.error('Error al guardar notas:', err);
     res.status(500).send('Error en el servidor');
   }
 });
 
 // --- ENDPOINTS PARA DIAGRAMAS SINTÁCTICOS ---
-app.get('/api/diagrams/:reference', async (req, res) => {
+app.get('/api/diagrams/:reference', authenticateToken, async (req, res) => {
+  
   const { reference } = req.params;
+  const userId = req.user.userId; // Obtenemos el ID del token
+
   try {
-    const result = await pool.query('SELECT nodes, edges FROM diagrams WHERE reference = $1', [reference]);
+    const result = await pool.query('SELECT nodes, edges FROM diagrams WHERE reference = $1 AND user_id = $2', [reference, userId]);
     if (result.rows.length > 0) {
       res.json(result.rows[0]);
     } else {
@@ -305,22 +381,25 @@ app.get('/api/diagrams/:reference', async (req, res) => {
   }
 });
 
-app.post('/api/diagrams', async (req, res) => {
+app.post('/api/diagrams', authenticateToken, async (req, res) => {
+  
   const { reference, nodes, edges } = req.body;
+  const userId = req.user.userId; // Obtenemos el ID del token
+
   if (!reference || !nodes || !edges) {
     return res.status(400).json({ message: 'La referencia, los nodos y las conexiones son requeridos.' });
   }
   try {
     const query = `
-      INSERT INTO diagrams (reference, nodes, edges, updated_at)
-      VALUES ($1, $2, $3, NOW())
-      ON CONFLICT (reference)
+      INSERT INTO diagrams (reference, nodes, edges, user_id, updated_at)
+      VALUES ($1, $2, $3, $4, NOW())
+      ON CONFLICT (reference, user_id)
       DO UPDATE SET 
         nodes = EXCLUDED.nodes, 
         edges = EXCLUDED.edges, 
         updated_at = NOW();
     `;
-    await pool.query(query, [reference, JSON.stringify(nodes), JSON.stringify(edges)]);
+    await pool.query(query, [reference, JSON.stringify(nodes), JSON.stringify(edges), userId]);
     res.status(200).json({ message: 'Diagrama guardado correctamente.' });
   } catch (err) {
     console.error('Error al guardar el diagrama:', err);
