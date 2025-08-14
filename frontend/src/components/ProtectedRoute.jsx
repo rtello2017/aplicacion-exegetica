@@ -1,19 +1,23 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 
-// Este componente actúa como un "guardián" para tus rutas.
-// Recibe como 'children' el componente que debe proteger (en tu caso, DiagramApp).
 const ProtectedRoute = ({ children }) => {
-  // 1. Revisa si existe un token en el almacenamiento local del navegador.
-  const token = localStorage.getItem('token');
+  // ✅ 1. Obtén 'localized' del contexto junto con los demás valores.
+  const { user, token, isAuthLoading, localized } = useLanguage();
 
-  // 2. Si NO hay token, redirige al usuario a la página de login.
-  // El 'replace' evita que el usuario pueda volver a la página anterior con el botón "atrás" del navegador.
-  if (!token) {
+  // Mientras se verifica el token, muestra un mensaje de carga.
+  if (isAuthLoading) {
+    // ✅ 2. Usa el texto desde el objeto 'localized'.
+    return <div>{localized.ui.app.verifyingSession}</div>;
+  }
+
+  // Si terminó de cargar y NO hay token/usuario, redirige al login.
+  if (!token || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  // 3. Si SÍ hay un token, muestra el contenido protegido que se le pasó como 'children'.
+  // Si todo está bien, muestra la aplicación.
   return children;
 };
 

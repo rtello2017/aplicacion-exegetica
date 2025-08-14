@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './AnalysisPopup.css';
 import ConcordanceModal from './ConcordanceModal';
+import { SessionExpiredError } from '../utils/errors';
 
 // MODIFICACIÓN: Se importan las funciones desde el archivo centralizado de utilidades.
 import { getFullPosName, parseDetailedMorphology } from '../utils/morphologyParser.js';
 
 import { useLanguage } from '../context/LanguageContext';
+
+import { apiFetch } from '../utils/api';
 
 function AnalysisPopup({ wordData, onClose, onSave }) {
   
@@ -35,26 +38,32 @@ function AnalysisPopup({ wordData, onClose, onSave }) {
     }
   }, [wordData, urls.apiBase]);
 
-  const handleSave = () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+  const handleSave = async () => {
+      try {
+          // Usamos Promise.all para que ambas peticiones se ejecuten en paralelo
+          await Promise.all([
+              // Petición para guardar el número de Strong
+              apiFetch(`/word/${wordData.id}`, {
+                  method: 'PATCH',
+                  body: JSON.stringify({ strongs }),
+              }),
+              // Petición para guardar la traducción del usuario
+              apiFetch(`/translation/${wordData.id}`, {
+                  method: 'PATCH',
+                  body: JSON.stringify({ user_translation: userTranslation }),
+              })
+          ]);
 
-    const promises = [];
-    promises.push(fetch(`${urls.apiBase}/word/${wordData.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ strongs }),
-    }));
-    promises.push(fetch(`${urls.apiBase}/translation/${wordData.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ user_translation: userTranslation }),
-    }));
-    
-    Promise.all(promises).then(() => {
-      onSave();
-      onClose();
-    }).catch(err => console.error("Error al guardar:", err));
+          onSave(); // Refresca los datos en la app principal
+          onClose(); // Cierra el popup
+
+      } catch (error) {
+          console.error("Error al guardar:", error);
+          // apiFetch ya maneja la redirección si la sesión expira
+          if (!(error instanceof SessionExpiredError)) { // <-- Compara el tipo, es robusto
+              alert(localized.ui.app.notesConnectionError);
+          }
+      }
   };
 
   const handleToggleEdit = () => {

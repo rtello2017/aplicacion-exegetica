@@ -61,7 +61,7 @@ function Word({ wordData, onWordClick, onWordDragStart, onWordDoubleClick }) {
 
       {/* MODIFICACIÓN: El nuevo tooltip */}
       <div className="word-tooltip">
-        <p><strong>{localized.ui.textViewer.tooltipRoot}</strong> {wordData.lemma || 'N/A'}</p>
+        <p><strong>{localized.ui.textViewer.tooltipRoot}</strong> {wordData.lemma || localized.ui.textViewer.notAvailable}</p>
         <p><strong>{localized.ui.textViewer.tooltipCategory}</strong> {tooltipPosInfo.name}</p>
         <p><strong>{localized.ui.textViewer.tooltipAnalysis}</strong> {tooltipParsingInfo.description}</p>
       </div>
@@ -71,7 +71,7 @@ function Word({ wordData, onWordClick, onWordDragStart, onWordDoubleClick }) {
 
 
 // --- Componente principal del Visor de Texto ---
-function TextViewer({ verseData, onWordClick, onWordDragStart, onWordDoubleClick, language }) {
+function TextViewer({ verseData, onWordClick, onWordDragStart, onWordDoubleClick }) {
   
   const { localized } = useLanguage();
   
@@ -93,7 +93,6 @@ function TextViewer({ verseData, onWordClick, onWordDragStart, onWordDoubleClick
                 onWordClick={onWordClick}
                 onWordDragStart={onWordDragStart}
                 onWordDoubleClick={onWordDoubleClick}
-                language={language}
               />
             ))}
           </div>

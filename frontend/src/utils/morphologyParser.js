@@ -3,14 +3,14 @@ const legendData = [
     { abbr: 'N-', name: 'Sustantivo (Noun)' },
     { abbr: 'V-', name: 'Verbo (Verb)' },
     { abbr: 'A-', name: 'Adjetivo (Adjective)' },
-    { abbr: 'P-', name: 'Pronombre Personal' },
-    { abbr: 'RP', name: 'Pronombre Relativo' },
-    { abbr: 'RA', name: 'Pronombre Demostrativo' },
-    { abbr: 'RD', name: 'Pronombre Indefinido' },
-    { abbr: 'RI', name: 'Pronombre Interrogativo' },
-    { abbr: 'D-', name: 'Artículo Definido' },
+    { abbr: 'P-', name: 'Preposición' },
+    { abbr: 'RP', name: 'Pronombre Personal' },
+    { abbr: 'RA', name: 'Artículo Definido' },
+    { abbr: 'RD', name: 'Pronombre Demostrativo' },
+    { abbr: 'RI', name: 'Pronombre Interrogativo / Indefinido' },
+    { abbr: 'D-', name: 'Adverbio' },
     { abbr: 'C-', name: 'Conjunción (Conjunction)' },
-    { abbr: 'RR', name: 'Adverbio (Adverb)' },
+    { abbr: 'RR', name: 'Pronombre Relativo' },
     { abbr: 'I-', name: 'Interjección (Interjection)' },
     { abbr: 'X-', name: 'Partícula (Particle)' },
     { abbr: 'ADV', name: 'Adverbio (Adverb)' },
@@ -21,9 +21,9 @@ const legendData = [
 
 // Mapas de equivalencias morfológicas
 const personMap = { '1': '1 Persona', '2': '2 Persona', '3': '3 Persona' };
-const tenseMap = { 'P': 'Presente', 'I': 'Imperfecto', 'F': 'Futuro', 'A': 'Aoristo', 'R': 'Perfecto', 'L': 'Pluscuamperfecto', 'X': 'Perfecto' };
+const tenseMap = { 'P': 'Presente', 'I': 'Imperfecto', 'F': 'Futuro', 'A': 'Aoristo', 'R': 'Perfecto', 'Y': 'Pluscuamperfecto', 'X': 'Perfecto' };
 const voiceMap = { 'A': 'Activo', 'M': 'Medio', 'P': 'Pasivo' };
-const moodMap = { 'I': 'Indicativo', 'S': 'Subjuntivo', 'O': 'Optativo', 'M': 'Imperativo', 'N': 'Infinitivo', 'P': 'Participio' };
+const moodMap = { 'I': 'Indicativo', 'S': 'Subjuntivo', 'O': 'Optativo', 'M': 'Imperativo', 'N': 'Infinitivo', 'P': 'Participio', 'D': 'Imperativo' };
 const numberMap = { 'S': 'Singular', 'P': 'Plural' };
 const caseMap = { 'N': 'Nominativo', 'G': 'Genitivo', 'D': 'Dativo', 'A': 'Acusativo', 'V': 'Vocativo' };
 const genderMap = { 'M': 'Masculino', 'F': 'Femenino', 'N': 'Neutro' };
@@ -36,41 +36,67 @@ export const getFullPosName = (posAbbr) => {
     return { abbr: cleanAbbr, name: fullName };
 };
 
+// En frontend/src/utils/morphologyParser.js
+
 export const parseDetailedMorphology = (parsingCode, pos) => {
-    if (!parsingCode || !pos) {
-        return { cleanCode: parsingCode || '', description: 'Análisis no disponible' };
-    }
-    const cleanCode = parsingCode.replace(/-/g, '');
-    const descriptionParts = [];
+  if (!parsingCode || !pos) return { cleanCode: '', description: 'No disponible' };
 
-    if (pos.startsWith('V-')) {
-        const mainPart = parsingCode.split('-')[0];
-        const secondaryPart = parsingCode.split('-')[1] || '';
-        let verbCode = mainPart;
-        let person = '';
-        if (personMap[verbCode[0]]) {
-            person = personMap[verbCode[0]];
-            verbCode = verbCode.substring(1);
-        }
-        if (tenseMap[verbCode[0]]) descriptionParts.push(tenseMap[verbCode[0]]);
-        if (voiceMap[verbCode[1]]) descriptionParts.push(voiceMap[verbCode[1]]);
-        if (moodMap[verbCode[2]]) descriptionParts.push(moodMap[verbCode[2]]);
-        if (person) descriptionParts.push(person);
-        if (numberMap[secondaryPart[0]]) descriptionParts.push(numberMap[secondaryPart[0]]);
-        if (verbCode.endsWith('P')) {
-            if (caseMap[secondaryPart[1]]) descriptionParts.push(caseMap[secondaryPart[1]]);
-            if (genderMap[secondaryPart[2]]) descriptionParts.push(genderMap[secondaryPart[2]]);
-        }
-    }
-    else if (pos.startsWith('N-') || pos.startsWith('A-') || pos.startsWith('R') || pos.startsWith('D-') || pos.startsWith('P-')) {
-        const mainPart = cleanCode;
-        if (caseMap[mainPart[0]]) descriptionParts.push(caseMap[mainPart[0]]);
-        if (numberMap[mainPart[1]]) descriptionParts.push(numberMap[mainPart[1]]);
-        if (genderMap[mainPart[2]]) descriptionParts.push(genderMap[mainPart[2]]);
-    }
+  const code = parsingCode.replace(/-/g, '').toUpperCase();
+  const mainPos = pos.split('-')[0].toUpperCase(); // Usamos el código POS completo (ej. 'RP', 'V')
+  let parts = [];
 
-    return {
-        cleanCode,
-        description: descriptionParts.length > 0 ? descriptionParts.join(' ') : 'No se requiere análisis detallado'
-    };
+  // Diccionarios (asegúrate de tenerlos definidos en tu archivo)
+  const tenses = { A: 'Aoristo', P: 'Presente', F: 'Futuro', I: 'Imperfecto', R: 'Perfecto', L: 'Pluscuamperfecto', X: 'Perfecto' };
+  // ✅ AÑADIDO: 'D' para Deponente
+  const voices = { A: 'Activa', M: 'Media', P: 'Pasiva', D: 'Deponente' };
+  const moods = { I: 'Indicativo', S: 'Subjuntivo', O: 'Optativo', M: 'Imperativo', N: 'Infinitivo', P: 'Participio', D: 'Imperativo' };
+  const persons = { '1': '1ra Persona', '2': '2da Persona', '3': '3ra Persona' };
+  const numbers = { S: 'Singular', P: 'Plural' };
+  const cases = { N: 'Nominativo', G: 'Genitivo', D: 'Dativo', A: 'Acusativo', V: 'Vocativo' };
+  const genders = { M: 'Masculino', F: 'Femenino', N: 'Neutro' };
+
+  if (mainPos === 'V') { // Verbos
+    const tense = tenses[code.charAt(0)];
+    const voice = voices[code.charAt(1)];
+    const mood = moods[code.charAt(2)];
+    if (tense) parts.push(tense);
+    if (voice) parts.push(voice);
+    if (mood) parts.push(mood);
+
+    const isParticiple = code.charAt(2) === 'P';
+
+    if (isParticiple) {
+      const caseVal = cases[code.charAt(3)];
+      const numberVal = numbers[code.charAt(4)];
+      const genderVal = genders[code.charAt(5)];
+      if (numberVal) parts.push(numberVal);
+      if (genderVal) parts.push(genderVal);
+      if (caseVal) parts.push(caseVal);
+    } else if (mood !== 'Infinitivo') {
+      const person = persons[code.charAt(3)];
+      const number = numbers[code.charAt(4)];
+      if (person) parts.push(person);
+      if (number) parts.push(number);
+    }
+  // ✅ MEJORADO: Ahora revisa una lista más amplia de tipos
+  } else if (['N', 'A', 'P', 'D', 'RP', 'RA', 'RD', 'RI'].includes(mainPos)) {
+    const caseVal = cases[code.charAt(0)];
+    const numberVal = numbers[code.charAt(1)];
+    const genderVal = genders[code.charAt(2)];
+    if (caseVal) parts.push(caseVal);
+    if (numberVal) parts.push(numberVal);
+    if (genderVal) parts.push(genderVal);
+  } else {
+      return { cleanCode: parsingCode, description: 'No se requiere análisis detallado' };
+  }
+
+  // Si después de todo el análisis no se generó descripción, devuelve el mensaje por defecto
+  if (parts.length === 0 && code.length > 0) {
+      return { cleanCode: parsingCode, description: 'Análisis detallado no disponible para este código.' };
+  }
+  
+  return {
+    cleanCode: parsingCode,
+    description: parts.join(' ')
+  };
 };

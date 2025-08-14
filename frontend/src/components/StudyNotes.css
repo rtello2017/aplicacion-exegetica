@@ -9,12 +9,17 @@
 
 /* Encabezado del panel de notas */
 .notes-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between; /* Empuja el título a la izq. y las acciones a la der. */
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* ✅ Nuevo contenedor para las acciones */
+.notes-actions {
+  display: flex;
+  gap: 10px; /* Crea un espacio consistente entre los botones */
 }
 
 .notes-header h3 {

@@ -11,17 +11,21 @@ function ConcordanceModal({ wordData, onClose }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (wordData.lemma && wordData.text) {
-      setIsLoading(true);
-      fetch(`${urls.apiBase}/word/concordance/${encodeURIComponent(wordData.lemma)}/${encodeURIComponent(wordData.text)}`)
-        .then(res => res.json())
-        .then(data => {
-          setConcordance(data);
-        })
-        .catch(err => console.error('Error al cargar la concordancia:', err))
-        .finally(() => setIsLoading(false));
-    }
-  }, [wordData, urls.apiBase]);
+      const fetchConcordance = async () => {
+          if (wordData.lemma && wordData.text) {
+              setIsLoading(true);
+              try {
+                  const data = await apiFetch(`/word/concordance/${encodeURIComponent(wordData.lemma)}/${encodeURIComponent(wordData.text)}`);
+                  setConcordance(data);
+              } catch (error) {
+                  console.error('Error al cargar la concordancia:', error);
+              } finally {
+                  setIsLoading(false);
+              }
+          }
+      };
+      fetchConcordance();
+  }, [wordData]);
 
   // Función para resaltar la palabra en el texto del versículo
   const highlightWord = (verseText, wordToHighlight) => {

@@ -275,50 +275,24 @@ h1 {
   height: 100%;
 }
 
-/* --- ESTILOS DE IMPRESIÓN CORREGIDOS --- */
+/* Estilos que se aplican solo al imprimir */
 @media print {
-  /* Ocultar la UI que no se debe imprimir */
-  .passage-selector,
-  .passage-navigator,
-  .tab-buttons,
-  .diagram-top-controls,
-  .diagram-toolbar-vertical,
-  .analysis-popup-overlay,
-  .react-flow__controls,
-  .react-flow__minimap,
-  .react-flow__attribution {
-    display: none !important;
+  /* Oculta todo por defecto */
+  body * {
+    visibility: hidden;
   }
 
-  /* Resetear el layout del contenedor principal para que ocupe toda la página */
-  body, .app-container, .tabs-container, .tab-content {
-    display: block !important;
-    position: static !important;
-    box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    background-color: #fff !important;
+  /* Muestra solo el área imprimible y su contenido */
+  #text-viewer-printable-area, #text-viewer-printable-area * {
+    visibility: visible;
   }
 
-  /* Ocultar el contenido de la pestaña que NO está activa */
-  .printable-content[style*="display: none"] {
-    display: none !important;
-  }
-
-  /* Asegurarse que el contenido activo ocupe el espacio */
-  .printable-content {
-    display: block !important;
-    width: 100% !important;
-    height: auto !important;
-    padding: 0 !important;
-  }
-
-  .diagram-view-container, #diagram-printable-area {
-    height: auto !important;
-    border: none !important;
+  /* Asegura que el área imprimible ocupe toda la página */
+  #text-viewer-printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
   }
 }
 

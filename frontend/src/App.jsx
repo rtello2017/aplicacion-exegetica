@@ -26,6 +26,10 @@ import LoginPage from './components/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 
+import { apiFetch } from './utils/api'; // Importa la nueva función
+import { SessionExpiredError } from './utils/errors';
+import { settings } from './appSettings';
+
 const LogoutIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -92,6 +96,67 @@ function DiagramApp() {
   // ✅ CORRECCIÓN: Se crea una referencia para el componente del diagrama
   const diagramRef = useRef(null);
 
+  const handlePrint = () => {
+    // Simplemente abre el diálogo de impresión del navegador.
+    // El CSS que añadimos se encargará de formatear el contenido.
+    window.print();
+  };
+
+  const handleExportPdf = () => {
+    const input = document.getElementById('text-viewer-printable-area');
+    if (!input) {
+      console.error("El elemento para exportar a PDF no fue encontrado.");
+      return;
+    }
+
+    // Usamos una opción para que html2canvas capture todo el ancho, incluso si hay overflow
+    html2canvas(input, { 
+      scale: 2, 
+      useCORS: true,
+      width: input.scrollWidth, // Captura el ancho total del contenido
+      height: input.scrollHeight // Captura el alto total del contenido
+    }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        // 1. Crear un PDF en tamaño A4 y orientación horizontal para más espacio
+        const pdf = new jsPDF({
+            orientation: 'landscape', // 'l' para horizontal
+            unit: 'px',
+            format: 'a4'
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        // 2. Calcular la proporción para que la imagen quepa sin deformarse
+        const canvasRatio = canvasWidth / canvasHeight;
+        const pdfRatio = pdfWidth / pdfHeight;
+
+        let finalWidth, finalHeight;
+        if (canvasRatio > pdfRatio) {
+            // Si la imagen es más ancha (proporcionalmente) que el PDF
+            finalWidth = pdfWidth;
+            finalHeight = pdfWidth / canvasRatio;
+        } else {
+            // Si la imagen es más alta (proporcionalmente) que el PDF
+            finalHeight = pdfHeight;
+            finalWidth = pdfHeight * canvasRatio;
+        }
+
+        // 3. (Opcional) Centrar la imagen en la página del PDF
+        const xOffset = (pdfWidth - finalWidth) / 2;
+        const yOffset = (pdfHeight - finalHeight) / 2;
+        
+        // 4. Añadir la imagen escalada al PDF
+        pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
+        
+        const fileName = verseData?.reference ? `pasaje_${verseData.reference.replace(/\s|:/g, '_')}.pdf` : 'pasaje.pdf';
+        pdf.save(fileName);
+    });
+  };
+
   useEffect(() => {
     try {
       localStorage.setItem('lastActiveQuery', JSON.stringify(activeQuery));
@@ -129,65 +194,57 @@ function DiagramApp() {
       .catch(err => console.error("Error al cargar versículos:", err));
   }, [selectedBookId, selectedChapter]);
 
-  const fetchData = useCallback(() => {
-    if (!activeQuery || books.length === 0) return;
-    const token = localStorage.getItem('token');
+  const fetchData = useCallback(async () => {
+      if (!activeQuery || books.length === 0) return;
+      setLoading(true);
 
-    // Si por alguna razón no hay token, no intentes buscar datos protegidos.
-    if (!token) {
-        setLoading(false);
-        return;
-    }
+      try {
+          let apiUrl = '';
+          if (activeQuery.type === 'range') {
+              apiUrl = `${urls.apiBase}/passage/${encodeURIComponent(activeQuery.range)}`;
+          } else {
+              const book = books.find(b => b.book_id === activeQuery.bookId);
+              if (!book) { setLoading(false); return; }
+              apiUrl = activeQuery.verse === 'ALL'
+                  ? `${urls.apiBase}/chapter/${book.name}/${activeQuery.chapter}`
+                  : `${urls.apiBase}/verse/${book.name}/${activeQuery.chapter}/${activeQuery.verse}`;
+          }
 
-    // ✅ 2. Prepara la cabecera de autorización para reutilizarla.
-    const authHeaders = {
-        'Authorization': `Bearer ${token}`
-    };
+          // 1. Obtenemos los datos del pasaje (esta ruta es pública)
+          const passageResponse = await fetch(apiUrl);
+          if (!passageResponse.ok) throw new Error('Pasaje no encontrado');
+          const passageData = await passageResponse.json();
+          
+          const reference = passageData.reference;
+          setVerseData({ reference, verses: passageData.verses || [{ verse: activeQuery.verse, words: passageData.words }] });
 
-    setLoading(true);
-    setInitialDiagramData(null); 
-    let apiUrl = '';
-    if (activeQuery.type === 'range') {
-      apiUrl = `${urls.apiBase}/passage/${encodeURIComponent(activeQuery.range)}`;
-    } else {
-      const book = books.find(b => b.book_id === activeQuery.bookId);
-      if (!book) { setLoading(false); return; }
-      apiUrl = activeQuery.verse === 'ALL'
-        ? `${urls.apiBase}/chapter/${book.name}/${activeQuery.chapter}`
-        : `${urls.apiBase}/verse/${book.name}/${activeQuery.chapter}/${activeQuery.verse}`;
-    }
+          // 2. Usamos Promise.all para buscar notas y diagramas en paralelo con apiFetch
+          const [notesData, diagramData] = await Promise.all([
+              apiFetch(`/notes/${encodeURIComponent(reference)}`).catch(() => ({ content: '' })),
+              apiFetch(`/diagrams/${encodeURIComponent(reference)}`).catch(() => null)
+          ]);
 
-    fetch(apiUrl)
-      .then(res => res.ok ? res.json() : Promise.reject({ noPassageFound: localized.ui.app.noPassageFound }))
-      .then(data => {
-        const reference = data.reference;
-        setVerseData({ reference, verses: data.verses || [{ verse: activeQuery.verse, words: data.words }] });
+          // 3. Actualizamos los estados con los datos obtenidos
+          const savedNotes = notesData.content || '';
+          setNotesContent(savedNotes);
+          if (notesEditorRef.current) {
+              notesEditorRef.current.setContent(savedNotes);
+          }
 
-        // Petición para obtener las notas, ahora con la cabecera de autorización.
-        fetch(`${urls.apiBase}/notes/${encodeURIComponent(reference)}`, { headers: authHeaders })
-          .then(res => res.json())
-          .then(notesData => {
-            const savedNotes = notesData.content || '';
-            setNotesContent(savedNotes);
-            if (notesEditorRef.current) notesEditorRef.current.setContent(savedNotes);
-          });
-
-        // Petición para obtener el diagrama, también con la cabecera.
-        fetch(`${urls.apiBase}/diagrams/${encodeURIComponent(reference)}`, { headers: authHeaders })
-          .then(res => res.ok ? res.json() : null)
-          .then(diagramData => {
-            if (diagramData && diagramData.nodes) {
+          if (diagramData && diagramData.nodes) {
               setInitialDiagramData(diagramData.nodes);
-            }
-          })
-          .catch(err => console.log('No se encontró diagrama guardado o hubo un error:', err));
+          } else {
+              setInitialDiagramData(null); // Limpiamos el diagrama si no se encuentra
+          }
 
-      })
-      .catch(error => { 
-        console.error("Error al obtener el pasaje:", error); 
-        setVerseData(null);
-      })
-      .finally(() => setLoading(false));
+      } catch (error) {
+          console.error("Error al obtener el pasaje:", error);
+          if (!(error instanceof SessionExpiredError)) { // <-- Compara el tipo, es robusto
+              alert(localized.ui.app.notesConnectionError);
+          }
+      } finally {
+          setLoading(false);
+      }
   }, [activeQuery, books, urls.apiBase]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -218,60 +275,56 @@ function DiagramApp() {
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleSaveDiagram = (diagramElements) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert(localized.ui.app.noTokenFound);
-        navigate('/login'); // ✅ Redirige al usuario a la ruta de login.
-        return;
-    }
-
+  const handleSaveDiagram = async (diagramElements) => {
     if (!verseData || !verseData.reference) {
       alert(localized.ui.app.selectPassageFirstDiagram);
       return;
     }
-    fetch(`${urls.apiBase}/diagrams`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({
-        reference: verseData.reference,
-        nodes: diagramElements,
-        edges: [],
-      }),
-    })
-    .then(res => res.ok ? alert(localized.ui.app.diagramSaveSuccess) : alert(localized.ui.app.diagramSaveError))
-    .catch(err => {
-      console.error('Error al guardar el diagrama:', err);
-      alert(localized.ui.app.diagramConnectionError);
-    });
+
+    try {
+        await apiFetch('/diagrams', {
+            method: 'POST',
+            body: JSON.stringify({
+                reference: verseData.reference,
+                nodes: diagramElements,
+                edges: [], // Asegúrate de manejar 'edges' si los usas
+            }),
+        });
+        alert(localized.ui.app.diagramSaveSuccess);
+    } catch (error) {
+        console.error('Error al guardar el diagrama:', error);
+        if (!(error instanceof SessionExpiredError)) { // <-- Compara el tipo, es robusto
+            alert(localized.ui.app.notesConnectionError);
+        }
+    }
   };
 
-  const handleSaveNotes = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert(localized.ui.app.noTokenFound);
-        navigate('/login'); // ✅ Redirige al usuario a la ruta de login.
-        return;
-    }
-
+const handleSaveNotes = async () => {
+    // 1. La validación del pasaje se mantiene igual.
     if (!verseData || !verseData.reference) {
       alert(localized.ui.app.selectPassageFirstNotes);
       return;
     }
-    fetch(`${urls.apiBase}/notes`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ reference: verseData.reference, content: notesContent }),
-    })
-    .then(res => res.ok ? alert(localized.ui.app.notesSaveSuccess) : alert(localized.ui.app.notesSaveError))
-    .catch(err => {
-        console.error('Error al guardar notas:', err);
-        alert(localized.ui.app.notesConnectionError);
-    });
-  };
+
+    // 2. Usamos try/catch para un manejo de errores más limpio.
+    try {
+        // 3. Llamamos a apiFetch. No necesitamos pasar el token ni las cabeceras.
+        await apiFetch('/notes', {
+            method: 'POST',
+            body: JSON.stringify({ reference: verseData.reference, content: notesContent }),
+        });
+
+        // Si la petición fue exitosa, muestra el mensaje de éxito.
+        alert(localized.ui.app.notesSaveSuccess);
+
+    } catch (error) {
+        console.error('Error al guardar notas:', error);
+        
+        if (!(error instanceof SessionExpiredError)) { // <-- Compara el tipo, es robusto
+            alert(localized.ui.app.notesConnectionError);
+        }
+    }
+};
 
   const handleWordDoubleClick = (wordData) => {
     if (notesEditorRef.current) notesEditorRef.current.insertContent(`${wordData.text} `);
@@ -302,8 +355,12 @@ function DiagramApp() {
             value={language} 
             onChange={(e) => setLanguage(e.target.value)}
           >
-            <option value="es">Español</option>
-            <option value="en">English</option>
+            {/* ✅ Mapea la lista de idiomas desde la configuración */}
+            {settings.languages.map(lang => (
+              <option key={lang.code} value={lang.code}>
+                {lang.name}
+              </option>
+            ))}
           </select>
         </div>
           {/* ✅ NUEVO: Botón de Logout */}
@@ -315,7 +372,15 @@ function DiagramApp() {
       
       {/* Pasamos el prop 'language' a los componentes que lo necesitarán */}
       <PassageSelector {...{books, chapters, verses, selectedBookId, setSelectedBookId, selectedChapter, setSelectedChapter, selectedVerse, setSelectedVerse, rangeInput, setRangeInput, handleRangeLoad}} />
-      <PassageNavigator onAddPassage={handleLoadPassageIntoDiagram} onPrevBook={handlePrevBook} onPrevVerse={handlePrevVerse} onNextVerse={handleNextVerse} onNextBook={handleNextBook} />
+      <PassageNavigator 
+          onAddPassage={handleLoadPassageIntoDiagram} 
+          onPrevBook={handlePrevBook} 
+          onPrevVerse={handlePrevVerse} 
+          onNextVerse={handleNextVerse} 
+          onNextBook={handleNextBook}
+          onPrint={handlePrint}
+          onExportPdf={handleExportPdf} 
+      />
       <Legend />
 
       <div className="tabs-container">
@@ -332,6 +397,7 @@ function DiagramApp() {
 
           <div id="diagram-printable-area" className="printable-content" style={{ display: activeTab === 'diagram' ? 'flex' : 'none', height: 'calc(100vh - 250px)'}}>
             <SyntaxDiagram
+              key={verseData?.reference || 'no-passage'}
               // ✅ CORRECCIÓN: Se asigna la referencia al componente
               ref={diagramRef}
               initialElements={initialDiagramData}

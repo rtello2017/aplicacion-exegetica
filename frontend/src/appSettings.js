@@ -5,6 +5,10 @@
  * Aquí van las configuraciones que no cambian entre idiomas, como las URLs.
  */
 const globalSettings = {
+    languages: [
+        { code: 'es', name: 'Español' },
+        { code: 'en', name: 'English' }
+    ],
     urls: {
         // Plantilla para la URL de consulta de los números Strong.
         // {strongs} es el placeholder que será reemplazado por el número.
@@ -53,7 +57,9 @@ const localizations = {
             studyNotes: {
                 title: 'Notas de Estudio para: {reference}',
                 noPassage: 'Ningún pasaje seleccionado',
-                saveButton: 'Guardar Notas'
+                saveButton: 'Guardar Notas',
+                exportPDFButton: 'Exportar Notas a PDF',
+                exportWordButton: 'Exportar Notas a Word',
             },
             textViewer: {
                 noPassage: 'Seleccione un pasaje para comenzar.',
@@ -141,7 +147,10 @@ const localizations = {
                 notesSaveError: 'Error al guardar las notas.',
                 notesConnectionError: 'Error de conexión al guardar las notas.',
                 noTokenFound: 'Tu sesión ha expirado. Por favor, inicia sesión de nuevo',
-                closeSession: 'Cerrar Sesión'
+                closeSession: 'Cerrar Sesión',
+                verifyingSession: 'Verificando sesión...',
+                sessionExpired: 'Sesión expirada.',
+                apiError: 'Error en la petición a la API',
             },
             loginPage: {
                 title: 'Iniciar Sesión',
@@ -211,7 +220,9 @@ const localizations = {
             studyNotes: {
                 title: 'Study Notes for: {reference}',
                 noPassage: 'No passage selected',
-                saveButton: 'Save Notes'
+                saveButton: 'Save Notes',
+                exportPDFButton: 'Export Notes to PDF',
+                exportWordButton: 'Export Notes to Word'
             },
             textViewer: {
                 noPassage: 'Select a passage to begin.',
@@ -299,7 +310,10 @@ const localizations = {
                 notesSaveError: 'Error saving the notes.',
                 notesConnectionError: 'Connection error while saving the notes.',
                 noTokenFound: 'Your session has expired. Please log in again.',
-                closeSession: 'Log Out'
+                closeSession: 'Log Out',
+                verifyingSession: 'Verifying session...',
+                sessionExpired: 'Session expired.',
+                apiError: 'Error in API request.'
             },
             loginPage: {
                 title: 'Login',
@@ -335,7 +349,7 @@ const localizations = {
         }
     }
 };
-
+ 
 /**
  * EXPORTACIÓN PRINCIPAL
  * Exportamos una combinación de la configuración global y una función

@@ -60,7 +60,7 @@ function PassageSelector({
         <input 
           type="text" 
           className="range-input"
-          placeholder="Ej: John 3:16-18"
+          placeholder={localized.ui.passageSelector.rangePlaceholder}
           value={rangeInput}
           onChange={(e) => setRangeInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleRangeLoad()}
