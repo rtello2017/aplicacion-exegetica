@@ -228,6 +228,25 @@ app.patch('/api/translation/:wordId', authenticateToken, async (req, res) => {
     }
 });
 
+// --- RUTA PARA ACTUALIZAR EL ANÁLISIS MORFOLÓGICO DE UNA PALABRA ---
+app.patch('/api/word/parsing/:wordId', authenticateToken, async (req, res) => {
+    const { wordId } = req.params;
+    const { parsing } = req.body;
+
+    // Validación para asegurar que se envía un código de análisis
+    if (typeof parsing !== 'string') {
+        return res.status(400).json({ message: 'El código de análisis morfológico (parsing) es requerido.' });
+    }
+
+    try {
+        await pool.query('UPDATE words SET parsing = $1 WHERE word_id = $2', [parsing, wordId]);
+        res.json({ message: 'Análisis morfológico actualizado correctamente.' });
+    } catch (err) {
+        console.error('Error al actualizar el análisis morfológico:', err);
+        res.status(500).json({ message: 'Error en el servidor.' });
+    }
+});
+
 // --- RUTA PARA OBTENER UN CAPÍTULO COMPLETO ---
 app.get('/api/chapter/:bookName/:chapter', async (req, res) => {
   const { bookName, chapter } = req.params;
@@ -461,8 +480,8 @@ app.get('/api/word/concordance/:lemma/:text', async (req, res) => {
         const concordanceQuery = `
             SELECT b.name, w.chapter, w.verse, w.text, w.lemma
             FROM words w
-            JOIN books b ON w.book_id = b.book_id
-            WHERE w.lemma = $1 OR w.text = $2
+            LEFT JOIN books b ON w.book_id = b.book_id
+            WHERE unaccent(w.lemma) = unaccent($1) OR unaccent(w.text) = unaccent($2)
             ORDER BY w.book_id, w.chapter, w.verse, w.position_in_verse;
         `;
         const result = await pool.query(concordanceQuery, [lemma, text]);
