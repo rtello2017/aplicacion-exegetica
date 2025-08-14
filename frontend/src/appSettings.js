@@ -116,7 +116,15 @@ const localizations = {
                 loading: 'Cargando...',
                 lemmaOccurrences: 'La raíz {lemma} aparece: {count} veces.',
                 textOccurrences: 'La forma {text} aparece: {count} veces.',
-                concordanceButton: 'Ver Concordancia'
+                concordanceButton: 'Ver Concordancia',
+                morphEditor: {
+                    editButton: 'Corregir',
+                    confirmMessage: '¿Estás seguro de que quieres corregir el análisis morfológico? Esta acción modificará los datos base de forma permanente.',
+                    parsingCodeLabel: 'Código de Análisis:',
+                    parsingPlaceholder: 'Ej: V-PAPNPM-',
+                    cancelButton: 'Cancelar',
+                    saveButton: 'Guardar Morfología'
+                }
             },
             concordanceModal: {
                 errorMsg: 'Error al cargar la concordancia.',
@@ -151,6 +159,7 @@ const localizations = {
                 verifyingSession: 'Verificando sesión...',
                 sessionExpired: 'Sesión expirada.',
                 apiError: 'Error en la petición a la API',
+                analysisMorphologyError: 'Error al guardar el análisis morfológico.'
             },
             loginPage: {
                 title: 'Iniciar Sesión',
@@ -279,7 +288,15 @@ const localizations = {
                 loading: 'Loading...',
                 lemmaOccurrences: 'The root {lemma} appears: {count} times.',
                 textOccurrences: 'The form {text} appears: {count} times.',
-                concordanceButton: 'View Concordance'
+                concordanceButton: 'View Concordance',
+                morphEditor: {
+                    editButton: 'Correct',
+                    confirmMessage: 'Are you sure you want to correct the morphological analysis? This action will permanently modify the base data.',
+                    parsingCodeLabel: 'Parsing Code:',
+                    parsingPlaceholder: 'e.g., V-PAPNPM-',
+                    cancelButton: 'Cancel',
+                    saveButton: 'Save Morphology'
+                }
             },
             concordanceModal: {
                 errorMsg: 'Error loading concordance.',
@@ -313,7 +330,8 @@ const localizations = {
                 closeSession: 'Log Out',
                 verifyingSession: 'Verifying session...',
                 sessionExpired: 'Session expired.',
-                apiError: 'Error in API request.'
+                apiError: 'Error in API request.',
+                analysisMorphologyError: 'Error saving morphological analysis.'
             },
             loginPage: {
                 title: 'Login',

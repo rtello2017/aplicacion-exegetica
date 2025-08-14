@@ -24,6 +24,10 @@ function AnalysisPopup({ wordData, onClose, onSave }) {
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [isConcordanceOpen, setIsConcordanceOpen] = useState(false);
 
+  // ✅ NUEVOS ESTADOS PARA LA EDICIÓN DE MORFOLOGÍA
+  const [isMorphEditing, setIsMorphEditing] = useState(false);
+  const [parsingInput, setParsingInput] = useState(wordData.parsing || '');
+
   //const strongsLink = `https://biblehub.com/greek/${wordData.strongs}.htm`;
   const strongsLink = wordData.strongs ? urls.strongs.replace('{strongs}', wordData.strongs) : '#';
 
@@ -62,6 +66,26 @@ function AnalysisPopup({ wordData, onClose, onSave }) {
           // apiFetch ya maneja la redirección si la sesión expira
           if (!(error instanceof SessionExpiredError)) { // <-- Compara el tipo, es robusto
               alert(localized.ui.app.notesConnectionError);
+          }
+      }
+  };
+
+  const handleSaveMorphology = async () => {
+      try {
+          await apiFetch(`/word/parsing/${wordData.id}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ parsing: parsingInput }),
+          });
+          
+          // Desactiva el modo edición
+          setIsMorphEditing(false);
+          // Llama a onSave() para refrescar los datos de toda la aplicación
+          onSave();
+          onClose();
+      } catch (error) {
+          console.error("Error al guardar la morfología:", error);
+          if (!(error instanceof SessionExpiredError)) { // <-- Compara el tipo, es robusto
+              alert(localized.ui.app.analysisMorphologyError);
           }
       }
   };
@@ -122,9 +146,54 @@ function AnalysisPopup({ wordData, onClose, onSave }) {
           <hr />
           
           <div className="popup-section">
-            <h3>{localized.ui.analysisPopup.morphologyTitle}</h3>
-            <p><strong>{localized.ui.analysisPopup.posLabel}</strong> {posInfo.abbr} - {posInfo.name}</p>
-            <p><strong>{localized.ui.analysisPopup.parsingLabel}</strong> {parsingInfo.cleanCode} - {parsingInfo.description}</p>
+            <div className="morphology-header">
+              <h3>{localized.ui.analysisPopup.morphologyTitle}</h3>
+              
+              {!isMorphEditing && (
+                <button 
+                  onClick={() => {
+                    if (window.confirm(localized.ui.analysisPopup.morphEditor.confirmMessage)) {
+                      setIsMorphEditing(true);
+                    }
+                  }}
+                  className="correct-morph-button"
+                >
+                  {localized.ui.analysisPopup.morphEditor.editButton}
+                </button>
+              )}
+            </div>
+
+            {isMorphEditing ? (
+              // --- VISTA DE EDICIÓN ---
+              <div className="morph-edit-form">
+                <div className="form-field">
+                  <label htmlFor="parsing-edit">
+                    <strong>{localized.ui.analysisPopup.morphEditor.parsingCodeLabel}</strong>
+                  </label>
+                  <input 
+                    id="parsing-edit" 
+                    type="text" 
+                    value={parsingInput} 
+                    onChange={e => setParsingInput(e.target.value)} 
+                    placeholder={localized.ui.analysisPopup.morphEditor.parsingPlaceholder}
+                  />
+                </div>
+                <div className="morph-edit-actions">
+                  <button onClick={() => setIsMorphEditing(false)} className="cancel-button">
+                    {localized.ui.analysisPopup.morphEditor.cancelButton}
+                  </button>
+                  <button onClick={handleSaveMorphology} className="save-button">
+                    {localized.ui.analysisPopup.morphEditor.saveButton}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // --- VISTA NORMAL ---
+              <>
+                <p><strong>{localized.ui.analysisPopup.posLabel}</strong> {posInfo.abbr} - {posInfo.name}</p>
+                <p><strong>{localized.ui.analysisPopup.parsingLabel}</strong> {parsingInfo.cleanCode} - {parsingInfo.description}</p>
+              </>
+            )}
           </div>
 
           <hr />

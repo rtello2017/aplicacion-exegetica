@@ -188,3 +188,47 @@ hr { border: none; border-top: 1px solid var(--color-border); margin: 20px 0; }
   margin-left: 16px; /* Añade espacio a la izquierda del botón */
   white-space: nowrap; /* Evita que el texto del botón se parta en dos líneas */
 }
+
+.morphology-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.correct-morph-button {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 4px 8px;
+}
+.correct-morph-button:hover {
+  text-decoration: underline;
+}
+
+.morph-edit-form {
+  margin-top: 10px;
+}
+
+.morph-edit-form input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 5px;
+  font-family: monospace; /* Ideal para códigos */
+}
+
+.morph-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.morph-edit-actions .cancel-button {
+  background-color: #6c757d;
+}
+
+.morph-edit-actions .save-button {
+  background-color: #28a745;
+}

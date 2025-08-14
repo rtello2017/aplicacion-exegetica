@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './ConcordanceModal.css';
 
 import { useLanguage } from '../context/LanguageContext';
+import { apiFetch } from '../utils/api';
 
 function ConcordanceModal({ wordData, onClose }) {
 
