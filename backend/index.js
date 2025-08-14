@@ -94,6 +94,16 @@ function authenticateToken(req, res, next) {
     });
 }
 
+// RUTA PARA VERIFICAR UN TOKEN EXISTENTE
+app.get('/api/auth/verify-token', authenticateToken, (req, res) => {
+  // Si el middleware 'authenticateToken' pasa, significa que el token es válido.
+  // Devolvemos la información del usuario contenida en el token.
+  res.json({ 
+      message: "Token válido.", 
+      user: { userId: req.user.userId, username: req.user.username } 
+  });
+});
+
 // RUTA PARA OBTENER UN SOLO VERSÍCULO
 app.get('/api/verse/:bookName/:chapter/:verse', async (req, res) => {
   const { bookName, chapter, verse } = req.params;
@@ -355,7 +365,7 @@ app.post('/api/notes', authenticateToken, async (req, res) => {
   const userId = req.user.userId; // Obtenemos el ID del token
   const { reference, content } = req.body;
 
-  if (!reference || content === undefined) {
+  if (!reference || content === undefined || content === null) {
     return res.status(400).send('La referencia y el contenido son requeridos.');
   }
   try {
@@ -366,7 +376,7 @@ app.post('/api/notes', authenticateToken, async (req, res) => {
       DO UPDATE SET content = $2, updated_at = NOW();
     `;
     await pool.query(query, [reference, content, userId]);
-    res.status(200).send('Notas guardadas correctamente.');
+    res.status(200).json({ message: 'Notas guardadas correctamente.' });
   } catch (err) {
     console.error('Error al guardar notas:', err);
     res.status(500).send('Error en el servidor');
