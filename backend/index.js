@@ -9,8 +9,27 @@ const jwt = require('jsonwebtoken');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+//const path = require('path');
+
 app.use(cors());
 app.use(express.json());
+
+// --- INICIO: CÓDIGO PARA SERVIR EL FRONTEND --- 
+// Sirve los archivos estáticos de la carpeta 'dist' de React
+//app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Formato: "Bearer TOKEN"
+
+    if (token == null) return res.sendStatus(401); // No hay token
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403); // Token inválido o expirado
+        req.user = user; // Guardamos los datos del usuario en el objeto de la petición
+        next(); // Continuar a la ruta protegida
+    });
+}
 
 // --- Rutas existentes ---
 app.get('/api', (req, res) => {
@@ -81,19 +100,6 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Formato: "Bearer TOKEN"
-
-    if (token == null) return res.sendStatus(401); // No hay token
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403); // Token inválido o expirado
-        req.user = user; // Guardamos los datos del usuario en el objeto de la petición
-        next(); // Continuar a la ruta protegida
-    });
-}
-
 // RUTA PARA VERIFICAR UN TOKEN EXISTENTE
 app.get('/api/auth/verify-token', authenticateToken, (req, res) => {
   // Si el middleware 'authenticateToken' pasa, significa que el token es válido.
@@ -105,22 +111,24 @@ app.get('/api/auth/verify-token', authenticateToken, (req, res) => {
 });
 
 // RUTA PARA OBTENER UN SOLO VERSÍCULO
-app.get('/api/verse/:bookName/:chapter/:verse', async (req, res) => {
+app.get('/api/verse/:bookName/:chapter/:verse', authenticateToken, async (req, res) => { // <-- Añadimos authenticateToken
   const { bookName, chapter, verse } = req.params;
+  const userId = req.user.userId; // <-- Obtenemos el userId
   try {
     const query = `
-    SELECT 
-      w.word_id, w.text, w.lemma, w.pos, w.parsing, w.strongs,
-      sl.transliteration, sl.gloss, sl.definition,
-      ut.user_translation
-    FROM words w
-    JOIN books b ON w.book_id = b.book_id
-    LEFT JOIN strongs_lexicon sl ON w.strongs = sl.strongs_id
-    LEFT JOIN user_translations ut ON w.word_id = ut.word_id
-    WHERE b.name = $1 AND w.chapter = $2 AND w.verse = $3
-    ORDER BY w.position_in_verse;
-  `;
-    const result = await pool.query(query, [bookName, chapter, verse]);
+      SELECT 
+        w.word_id, w.text, w.lemma, w.pos, w.parsing, w.strongs,
+        sl.transliteration, sl.gloss, sl.definition,
+        ut.user_translation
+      FROM words w
+      JOIN books b ON w.book_id = b.book_id
+      LEFT JOIN strongs_lexicon sl ON w.strongs = sl.strongs_id
+      LEFT JOIN user_translations ut ON w.word_id = ut.word_id AND ut.user_id = $4
+      WHERE b.name = $1 AND w.chapter = $2 AND w.verse = $3
+      ORDER BY w.position_in_verse;
+    `;
+    const result = await pool.query(query, [bookName, chapter, verse, userId]); // <-- Pasamos userId como 4to parámetro
+    
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Versículo no encontrado.' });
     }
@@ -248,8 +256,9 @@ app.patch('/api/word/parsing/:wordId', authenticateToken, async (req, res) => {
 });
 
 // --- RUTA PARA OBTENER UN CAPÍTULO COMPLETO ---
-app.get('/api/chapter/:bookName/:chapter', async (req, res) => {
+app.get('/api/chapter/:bookName/:chapter', authenticateToken, async (req, res) => { // <-- Añadimos authenticateToken
   const { bookName, chapter } = req.params;
+  const userId = req.user.userId; // <-- Obtenemos el userId
   try {
     const query = `
       SELECT 
@@ -259,17 +268,17 @@ app.get('/api/chapter/:bookName/:chapter', async (req, res) => {
       FROM words w
       JOIN books b ON w.book_id = b.book_id
       LEFT JOIN strongs_lexicon sl ON w.strongs = sl.strongs_id
-      LEFT JOIN user_translations ut ON w.word_id = ut.word_id
+      LEFT JOIN user_translations ut ON w.word_id = ut.word_id AND ut.user_id = $3
       WHERE b.name = $1 AND w.chapter = $2
       ORDER BY w.verse, w.position_in_verse;
     `;
-    const result = await pool.query(query, [bookName, chapter]);
+    const result = await pool.query(query, [bookName, chapter, userId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Capítulo no encontrado.' });
     }
     const verses = result.rows.reduce((acc, row) => {
       if (!acc[row.verse]) {
-        acc[row.verse] = { verse: row.verse, words: [] };
+        acc[row.verse] = { verse: row.verse, words: [] };   
       }
       acc[row.verse].words.push({
         id: row.word_id,
@@ -297,8 +306,9 @@ app.get('/api/chapter/:bookName/:chapter', async (req, res) => {
 });
 
 // --- RUTA PARA OBTENER RANGOS DE PASAJES ---
-app.get('/api/passage/:range', async (req, res) => {
+app.get('/api/passage/:range', authenticateToken, async (req, res) => { 
   const { range } = req.params;
+  const userId = req.user.userId; // <-- Obtenemos el userId
   const singleVerseRegex = /(.+?)\s+(\d+):(\d+)$/;
   const verseRangeRegex = /(.+?)\s+(\d+):(\d+)-(\d+)$/;
   let bookName, chapter, startVerse, endVerse;
@@ -330,11 +340,11 @@ app.get('/api/passage/:range', async (req, res) => {
       FROM words w
       JOIN books b ON w.book_id = b.book_id
       LEFT JOIN strongs_lexicon sl ON w.strongs = sl.strongs_id
-      LEFT JOIN user_translations ut ON w.word_id = ut.word_id
+      LEFT JOIN user_translations ut ON w.word_id = ut.word_id AND ut.user_id = $5
       WHERE b.name = $1 AND w.chapter = $2 AND w.verse BETWEEN $3 AND $4
       ORDER BY w.verse, w.position_in_verse;
     `;
-    const result = await pool.query(query, [correctBookName, chapter, startVerse, endVerse]);
+    const result = await pool.query(query, [correctBookName, chapter, startVerse, endVerse, userId]);
     const verses = result.rows.reduce((acc, row) => {
       if (!acc[row.verse]) { acc[row.verse] = { verse: row.verse, words: [] }; }
       acc[row.verse].words.push({ 
@@ -448,7 +458,7 @@ app.post('/api/diagrams', authenticateToken, async (req, res) => {
 });
 
 // =======================================================
-// --- ✅ NUEVOS ENDPOINTS PARA CONCORDANCIA ---
+// --- NUEVOS ENDPOINTS PARA CONCORDANCIA ---
 // =======================================================
 
 // 1. OBTENER ESTADÍSTICAS DE FRECUENCIA
@@ -525,6 +535,13 @@ app.get('/api/word/concordance/:lemma/:text', async (req, res) => {
         res.status(500).json({ message: 'Error en el servidor.' });
     }
 });
+
+// --- FIN: CÓDIGO PARA SERVIR EL FRONTEND ---
+// Este "catch-all" debe ir al final, después de las rutas API.
+// Se asegura de que React Router maneje las rutas del frontend.
+/*app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
+}); */
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
