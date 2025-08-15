@@ -199,21 +199,24 @@ function DiagramApp() {
       setLoading(true);
 
       try {
-          let apiUrl = '';
+          //let apiUrl = '';
+          let apiPath = '';
           if (activeQuery.type === 'range') {
-              apiUrl = `${urls.apiBase}/passage/${encodeURIComponent(activeQuery.range)}`;
+              apiPath = `/passage/${encodeURIComponent(activeQuery.range)}`;
           } else {
               const book = books.find(b => b.book_id === activeQuery.bookId);
               if (!book) { setLoading(false); return; }
-              apiUrl = activeQuery.verse === 'ALL'
-                  ? `${urls.apiBase}/chapter/${book.name}/${activeQuery.chapter}`
-                  : `${urls.apiBase}/verse/${book.name}/${activeQuery.chapter}/${activeQuery.verse}`;
+              apiPath = activeQuery.verse === 'ALL'
+                  ? `/chapter/${book.name}/${activeQuery.chapter}`
+                  : `/verse/${book.name}/${activeQuery.chapter}/${activeQuery.verse}`;
           }
 
           // 1. Obtenemos los datos del pasaje (esta ruta es pública)
-          const passageResponse = await fetch(apiUrl);
+          /*const passageResponse = await apiFetch(apiPath);
           if (!passageResponse.ok) throw new Error('Pasaje no encontrado');
-          const passageData = await passageResponse.json();
+          const passageData = await passageResponse.json();*/
+
+          const passageData = await apiFetch(apiPath);
           
           const reference = passageData.reference;
           setVerseData({ reference, verses: passageData.verses || [{ verse: activeQuery.verse, words: passageData.words }] });
@@ -299,32 +302,32 @@ function DiagramApp() {
     }
   };
 
-const handleSaveNotes = async () => {
-    // 1. La validación del pasaje se mantiene igual.
-    if (!verseData || !verseData.reference) {
-      alert(localized.ui.app.selectPassageFirstNotes);
-      return;
-    }
+  const handleSaveNotes = async () => {
+      // 1. La validación del pasaje se mantiene igual.
+      if (!verseData || !verseData.reference) {
+        alert(localized.ui.app.selectPassageFirstNotes);
+        return;
+      }
 
-    // 2. Usamos try/catch para un manejo de errores más limpio.
-    try {
-        // 3. Llamamos a apiFetch. No necesitamos pasar el token ni las cabeceras.
-        await apiFetch('/notes', {
-            method: 'POST',
-            body: JSON.stringify({ reference: verseData.reference, content: notesContent }),
-        });
+      // 2. Usamos try/catch para un manejo de errores más limpio.
+      try {
+          // 3. Llamamos a apiFetch. No necesitamos pasar el token ni las cabeceras.
+          await apiFetch('/notes', {
+              method: 'POST',
+              body: JSON.stringify({ reference: verseData.reference, content: notesContent }),
+          });
 
-        // Si la petición fue exitosa, muestra el mensaje de éxito.
-        alert(localized.ui.app.notesSaveSuccess);
+          // Si la petición fue exitosa, muestra el mensaje de éxito.
+          alert(localized.ui.app.notesSaveSuccess);
 
-    } catch (error) {
-        console.error('Error al guardar notas:', error);
-        
-        if (!(error instanceof SessionExpiredError)) { // <-- Compara el tipo, es robusto
-            alert(localized.ui.app.notesConnectionError);
-        }
-    }
-};
+      } catch (error) {
+          console.error('Error al guardar notas:', error);
+          
+          if (!(error instanceof SessionExpiredError)) { // <-- Compara el tipo, es robusto
+              alert(localized.ui.app.notesConnectionError);
+          }
+      }
+  };
 
   const handleWordDoubleClick = (wordData) => {
     if (notesEditorRef.current) notesEditorRef.current.insertContent(`${wordData.text} `);
