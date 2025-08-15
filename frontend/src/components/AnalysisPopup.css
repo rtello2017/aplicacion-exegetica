@@ -160,8 +160,6 @@ hr { border: none; border-top: 1px solid var(--color-border); margin: 20px 0; }
   width: 90px;
 }
 
-* --- Añade estas reglas a tu archivo AnalysisPopup.css --- */
-
 /* Estilos para el nuevo contenedor del encabezado */
 .popup-header {
   display: flex; /* Activa Flexbox */

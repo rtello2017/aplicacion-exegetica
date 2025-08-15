@@ -83,3 +83,105 @@
   color: #d9534f; /* Color rojo para resaltar */
   font-weight: bold;
 }
+
+.concordance-text .word {
+  display: inline-block; /* Permite margen/padding */
+  margin-right: 5px; /* Espacio entre palabras */
+}
+
+.concordance-text .word .parsing {
+  font-size: 0.75em;
+  color: #666;
+  display: block; /* El parsing debajo de la palabra */
+  line-height: 1;
+}
+
+/* Estilo para la palabra que coincide con la búsqueda */
+.concordance-text .highlight .greek-word {
+  font-weight: bold;
+  color: #0056b3; /* Un azul oscuro para resaltar */
+  text-decoration: underline;
+}
+
+/* --- Estilos para la cabecera del Modal --- */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.export-pdf-button {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.export-pdf-button:hover {
+  background-color: #e0e0e0;
+}
+
+
+/* --- Estilos para el contexto de la palabra --- */
+.concordance-text .word {
+  display: inline-block;
+  text-align: center;
+  margin: 0 4px;
+}
+
+.concordance-text .word .parsing {
+  font-size: 0.75em;
+  color: #666;
+  display: block;
+  line-height: 1.1;
+  margin-top: 2px;
+}
+
+.concordance-text .highlight .greek-word {
+  font-weight: bold;
+  color: #0056b3;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+}
+
+
+/* --- Estilos para la Paginación --- */
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  margin-top: auto; /* Empuja la paginación al fondo de la columna */
+  border-top: 1px solid #eee;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.pagination-controls button {
+  padding: 4px 12px;
+  border: 1px solid #ccc;
+  background-color: #f8f9fa;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.pagination-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
