@@ -473,51 +473,53 @@ app.get('/api/word/stats/:lemma/:text', async (req, res) => {
     }
 });
 
-// 2. OBTENER CONCORDANCIA
+// 2. OBTENER CONCORDANCIA DE UNA PALABRA POR LEMA Y TEXTO
 app.get('/api/word/concordance/:lemma/:text', async (req, res) => {
     const { lemma, text } = req.params;
-    try {
-        const concordanceQuery = `
-            SELECT b.name, w.chapter, w.verse, w.text, w.lemma
-            FROM words w
-            LEFT JOIN books b ON w.book_id = b.book_id
-            WHERE unaccent(w.lemma) = unaccent($1) OR unaccent(w.text) = unaccent($2)
-            ORDER BY w.book_id, w.chapter, w.verse, w.position_in_verse;
-        `;
-        const result = await pool.query(concordanceQuery, [lemma, text]);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 25;
+    const offset = (page - 1) * limit;
 
-        // Agrupar palabras por versículo
-        const verses = result.rows.reduce((acc, row) => {
-            const key = `${row.name} ${row.chapter}:${row.verse}`;
-            if (!acc[key]) {
-                acc[key] = {
-                    reference: key,
-                    words: [],
-                    isLemmaMatch: false,
-                    isTextMatch: false
-                };
-            }
-            acc[key].words.push(row.text);
-            if (row.lemma === lemma) acc[key].isLemmaMatch = true;
-            if (row.text === text) acc[key].isTextMatch = true;
+    try {
+        // 1. Llamamos a la función de conteo
+        const countResult = await pool.query('SELECT * FROM get_concordance_count($1, $2)', [lemma, text]);
+        const totals = {
+            lemma: parseInt(countResult.rows[0].lemma_count, 10),
+            text: parseInt(countResult.rows[0].text_count, 10)
+        };
+
+        // 2. Llamamos a la función de paginación
+        const allWordsResult = await pool.query('SELECT * FROM get_concordance_page($1, $2, $3, $4)', [lemma, text, limit, offset]);
+        
+        // 3. El código de procesamiento en Node.js se mantiene, ya que funciona bien
+        const versesMap = allWordsResult.rows.reduce((acc, row) => {
+            const key = (row.book_name || 'Libro Desconocido') + ` ${row.chapter}:${row.verse}`;
+            if (!acc[key]) { acc[key] = { reference: key, words: [] }; }
+            acc[key].words.push({ text: row.word_text, lemma: row.word_lemma, parsing: row.word_parsing || '---' });
             return acc;
         }, {});
 
-        // Separar en dos listas
         const lemmaOccurrences = [];
         const textOccurrences = [];
 
-        Object.values(verses).forEach(verse => {
-            const verseText = verse.words.join(' ');
-            if (verse.isLemmaMatch) {
-                lemmaOccurrences.push({ reference: verse.reference, text: verseText });
-            }
-            if (verse.isTextMatch) {
-                textOccurrences.push({ reference: verse.reference, text: verseText });
-            }
+        Object.values(versesMap).forEach(verse => {
+            verse.words.forEach((word, index) => {
+                const contextWords = 3;
+                if (word.lemma === lemma) {
+                    const start = Math.max(0, index - contextWords);
+                    const end = Math.min(verse.words.length, index + contextWords + 1);
+                    lemmaOccurrences.push({ reference: verse.reference, context: verse.words.slice(start, end) });
+                }
+                if (word.text === text) {
+                    const start = Math.max(0, index - contextWords);
+                    const end = Math.min(verse.words.length, index + contextWords + 1);
+                    textOccurrences.push({ reference: verse.reference, context: verse.words.slice(start, end) });
+                }
+            });
         });
 
-        res.json({ lemmaOccurrences, textOccurrences });
+        res.json({ lemmaOccurrences, textOccurrences, totals });
+
     } catch (err) {
         console.error('Error al obtener la concordancia:', err);
         res.status(500).json({ message: 'Error en el servidor.' });
