@@ -1,4 +1,9 @@
 require('dotenv').config();
+
+//console.log("----- VARIABLES DE ENTORNO CARGADAS -----");
+//console.log(process.env);
+//console.log("-----------------------------------------");
+
 const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
@@ -9,14 +14,20 @@ const jwt = require('jsonwebtoken');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-//const path = require('path');
+// *******************************************************
+// Descomentar esta linea cuando se haga pase a PRODUCCION
+const path = require('path');
+// *******************************************************
 
 app.use(cors());
 app.use(express.json());
 
+// *******************************************************
+// Descomentar esta linea cuando se haga pase a PRODUCCION
 // --- INICIO: CÓDIGO PARA SERVIR EL FRONTEND --- 
 // Sirve los archivos estáticos de la carpeta 'dist' de React
-//app.use(express.static(path.join(__dirname, '../frontend/dist')));
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+// *******************************************************
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -536,12 +547,15 @@ app.get('/api/word/concordance/:lemma/:text', async (req, res) => {
     }
 });
 
+// ********************************************************************
+// Descomentar estas lineas cuando se habilite el pase a PRODUCCION
 // --- FIN: CÓDIGO PARA SERVIR EL FRONTEND ---
 // Este "catch-all" debe ir al final, después de las rutas API.
 // Se asegura de que React Router maneje las rutas del frontend.
-/*app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
-}); */
+});
+// ********************************************************************
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
