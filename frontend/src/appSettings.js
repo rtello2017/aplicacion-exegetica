@@ -13,8 +13,12 @@ const globalSettings = {
         // Plantilla para la URL de consulta de los números Strong.
         // {strongs} es el placeholder que será reemplazado por el número.
         strongs: 'https://biblehub.com/greek/{strongs}.htm',
-        apiBase: 'http://localhost:4000/api'
-        //apiBase: '/api',
+        
+        // Clave que se debe descomentar para la versión en DESARROLLO
+        //apiBase: 'http://localhost:4000/api'
+        
+        // Clave que se debe descomentar para la versión en PRODUCCION
+        apiBase: '/api',
     },
 };
 

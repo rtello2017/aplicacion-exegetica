@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext'; // Asumiendo que quieres usarlo aquí también
 import './LoginPage.css'; // Crea este archivo para los estilos
 
@@ -10,6 +11,8 @@ function LoginPage() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { localized, urls } = useLanguage();
+
+  const auth = useContext(AuthContext);
 
   const t = localized.ui.loginPage;
 
@@ -34,7 +37,7 @@ function LoginPage() {
 
       if (isLoginView) {
         localStorage.setItem('token', data.token); // Guardamos el token
-        navigate('/'); // Redirigimos a la app principal
+        auth.login({ token: data.token, username: data.username });
       } else {
         // Si es registro, cambiamos a la vista de login para que inicie sesión
         setIsLoginView(true);

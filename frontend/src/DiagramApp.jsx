@@ -20,6 +20,9 @@ import { settings } from './appSettings';
 import { useLanguage } from './context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 
+import { useContext } from 'react';
+import { AuthContext } from './context/AuthContext';
+
 // --- NUEVO DIAGRAMADOR CONECTADO ---
 import SyntaxDiagram from './components/SyntaxDiagram';
 
@@ -37,9 +40,10 @@ function DiagramApp() {
 
   const navigate = useNavigate();
 
+  const { logout } = useContext(AuthContext);
+
   const handleLogout = () => {
-    localStorage.removeItem('token'); // 1. Elimina el token del almacenamiento
-    navigate('/login');               // 2. Redirige al usuario a la página de login
+    logout();
   };
 
   // ✅ CORRECCIÓN: Definimos la función ANTES de usarla.
