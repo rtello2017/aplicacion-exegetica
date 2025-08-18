@@ -19,7 +19,20 @@ const PORT = process.env.PORT || 5000;
 const path = require('path');
 // *******************************************************
 
-app.use(cors());
+// --- CONFIGURACIÓN DE CORS INTELIGENTE Y SEGURA ---
+// Lee el origen permitido desde una variable de entorno.
+// Si no existe, permite peticiones desde tu frontend local para desarrollo.
+const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:5000'; // Asegúrate que el puerto sea el de tu app Vite local
+
+const corsOptions = {
+  origin: allowedOrigin,
+  optionsSuccessStatus: 200 
+};
+
+console.log(`CORS configurado para permitir el origen: ${allowedOrigin}`);
+app.use(cors(corsOptions));
+// -----------------------------------------
+
 app.use(express.json());
 
 // *******************************************************
