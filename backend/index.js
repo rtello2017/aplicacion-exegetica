@@ -26,7 +26,7 @@ app.use(express.json());
 // Descomentar esta linea cuando se haga pase a PRODUCCION
 // --- INICIO: CÓDIGO PARA SERVIR EL FRONTEND --- 
 // Sirve los archivos estáticos de la carpeta 'dist' de React
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
+//app.use(express.static(path.join(__dirname, '../frontend/dist')));
 // *******************************************************
 
 function authenticateToken(req, res, next) {
