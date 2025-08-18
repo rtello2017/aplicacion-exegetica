@@ -6,6 +6,8 @@ frontend/node_modules
 .env
 backend/.env
 
+exegetica_db.dump
+
 # Carpeta de compilación del frontend
 frontend/dist
 

@@ -26,7 +26,9 @@ app.use(express.json());
 // Descomentar esta linea cuando se haga pase a PRODUCCION
 // --- INICIO: CÓDIGO PARA SERVIR EL FRONTEND --- 
 // Sirve los archivos estáticos de la carpeta 'dist' de React
-//app.use(express.static(path.join(__dirname, '../frontend/dist')));
+if (!process.env.DATABASE_URL) {
+  app.use(express.static(path.join(__dirname, '../frontend/dist')));
+}
 // *******************************************************
 
 function authenticateToken(req, res, next) {
@@ -549,12 +551,13 @@ app.get('/api/word/concordance/:lemma/:text', async (req, res) => {
 
 // ********************************************************************
 // Descomentar estas lineas cuando se habilite el pase a PRODUCCION
-// --- FIN: CÓDIGO PARA SERVIR EL FRONTEND ---
 // Este "catch-all" debe ir al final, después de las rutas API.
 // Se asegura de que React Router maneje las rutas del frontend.
-//app.get(/.*/, (req, res) => {
-//  res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
-//});
+if (!process.env.DATABASE_URL) {
+  app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
+  });
+}
 // ********************************************************************
 
 app.listen(PORT, () => {
