@@ -25,7 +25,7 @@ const globalSettings = {
         
         // Clave que se debe descomentar para la versión en PRODUCCION
         // La URL base de la API ahora es dinámica.
-        apiBase: apiBaseUrl,
+        apiBase: `${apiBaseUrl}/api`,
     },
 };
 
