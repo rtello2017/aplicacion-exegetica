@@ -9,17 +9,14 @@ let dbConfig;
 // Condición: ¿Existe la variable de entorno DATABASE_URL (provista por Render)?
 if (process.env.DATABASE_URL) {
   // Sí, estamos en producción (Render).
-  console.log('Entorno de producción detectado. Usando DATABASE_URL.');
+  console.log('Entorno de producción detectado. Usando DATABASE_URL con SSL.');
   dbConfig = {
     connectionString: process.env.DATABASE_URL,
-    // Render puede requerir SSL para conexiones externas,
-    // pero para conexiones internas (backend a BD en Render) no suele ser necesario.
-    // Si tienes problemas de conexión, puedes añadir esta configuración:
-    /*
+    // --- ESTA ES LA MODIFICACIÓN CRÍTICA PARA RENDER ---
+    // Render requiere conexiones seguras (SSL) para sus bases de datos.
     ssl: {
       rejectUnauthorized: false
     }
-    */
   };
 } else {
   // No, estamos en desarrollo (local).

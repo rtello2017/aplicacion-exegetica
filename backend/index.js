@@ -49,9 +49,9 @@ app.get('/api', (req, res) => {
 
 app.get('/api/db-test', async (req, res) => {
   try {
-    const result = await pool.query('SELECT NOW()');
+    const result = await pool.query('SELECT NOW()'); // Consulta la hora actual de la BD
     res.json({
-      message: 'Conexión a la base de datos exitosa ✅',
+      message: '¡Conexión a la base de datos exitosa! ✅',
       db_time: result.rows[0].now,
     });
   } catch (err) {
