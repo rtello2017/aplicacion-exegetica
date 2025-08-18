@@ -1,5 +1,10 @@
 // src/appSettings.js
 
+// --- LA LÓGICA INTELIGENTE ESTÁ AQUÍ ---
+// 1. Intenta leer la variable de entorno para producción (definida en Render).
+// 2. Si no existe, usa la URL para desarrollo local.
+const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 /**
  * CONFIGURACIÓN GLOBAL (Independiente del idioma)
  * Aquí van las configuraciones que no cambian entre idiomas, como las URLs.
@@ -18,7 +23,8 @@ const globalSettings = {
         //apiBase: 'http://localhost:4000/api'
         
         // Clave que se debe descomentar para la versión en PRODUCCION
-        apiBase: '/api',
+        // La URL base de la API ahora es dinámica.
+        apiBase: apiBaseUrl,
     },
 };
 
