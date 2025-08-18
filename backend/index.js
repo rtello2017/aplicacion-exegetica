@@ -552,9 +552,9 @@ app.get('/api/word/concordance/:lemma/:text', async (req, res) => {
 // --- FIN: CÓDIGO PARA SERVIR EL FRONTEND ---
 // Este "catch-all" debe ir al final, después de las rutas API.
 // Se asegura de que React Router maneje las rutas del frontend.
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
-});
+//app.get(/.*/, (req, res) => {
+//  res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
+//});
 // ********************************************************************
 
 app.listen(PORT, () => {
