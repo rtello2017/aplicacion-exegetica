@@ -3,7 +3,8 @@
 // --- LA LÓGICA INTELIGENTE ESTÁ AQUÍ ---
 // 1. Intenta leer la variable de entorno para producción (definida en Render).
 // 2. Si no existe, usa la URL para desarrollo local.
-const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+//const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'; // Asegúrate que el puerto local sea el correcto
 
 /**
  * CONFIGURACIÓN GLOBAL (Independiente del idioma)
